@@ -16,6 +16,7 @@ import {
   Moon,
   LogOut,
   Car,
+  Users,
 } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { auth } from "@/lib/auth/google-auth";
@@ -28,6 +29,7 @@ interface SidebarProps {
 const menuItems = [
   { icon: UserCog, label: "Funcionários", href: "/dashboard/funcionarios" },
   { icon: Car, label: "Veículos", href: "/dashboard/veiculos" },
+  { icon: Users, label: "Usuários", href: "/dashboard/usuarios" },
 ];
 
 export function Sidebar({ session }: SidebarProps) {
