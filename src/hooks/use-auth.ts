@@ -64,6 +64,7 @@ export function useAuth() {
           console.error("Error fetching user role:", userDataError);
           setUser(null);
         } else {
+          console.log("User data found:", userData);
           setUser({
             user,
             role: userData?.role as UserRole | null,
@@ -151,9 +152,31 @@ export function useAuth() {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    router.push("/login");
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Error signing out on client:", error);
+    }
+
+    try {
+      const response = await fetch("/auth/signout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const { message } = await response.json();
+        console.error("Failed to clear server session:", message);
+      }
+    } catch (error) {
+      console.error("Error calling server signout route:", error);
+    } finally {
+      setUser(null);
+      router.push("/login");
+      router.refresh();
+    }
   };
 
   return {

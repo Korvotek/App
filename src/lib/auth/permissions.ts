@@ -35,20 +35,23 @@ export function hasPermission(
   const permissions = ROLE_PERMISSIONS[userRole];
   const resourcePermission = permissions.find(p => p.resource === resource);
   
-  return resourcePermission?.actions.includes(action) ?? false;
+  const hasAccess = resourcePermission?.actions.includes(action) ?? false;
+  console.log(`Permission check: role=${userRole}, resource=${resource}, action=${action}, hasAccess=${hasAccess}`);
+  
+  return hasAccess;
 }
 
 export function canAccessRoute(userRole: UserRole | null, route: string): boolean {
-  const routePermissions: Record<string, { role: UserRole; action: string }> = {
-    "/dashboard/usuarios": { role: "ADMIN", action: "read" },
-    "/dashboard/auditoria": { role: "ADMIN", action: "read" },
-    "/dashboard/funcionarios": { role: "OPERATOR", action: "read" },
-    "/dashboard/veiculos": { role: "OPERATOR", action: "read" },
-    "/dashboard": { role: "VIEWER", action: "read" },
+  const routePermissions: Record<string, { resource: string; action: string }> = {
+    "/dashboard/usuarios": { resource: "users", action: "read" },
+    "/dashboard/auditoria": { resource: "audit", action: "read" },
+    "/dashboard/funcionarios": { resource: "employees", action: "read" },
+    "/dashboard/veiculos": { resource: "vehicles", action: "read" },
+    "/dashboard": { resource: "dashboard", action: "read" },
   };
 
   const permission = routePermissions[route];
   if (!permission) return true; // Rotas não listadas são públicas
 
-  return hasPermission(userRole, permission.role.toLowerCase(), permission.action);
+  return hasPermission(userRole, permission.resource, permission.action);
 }
