@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { devtools, persist } from "zustand/middleware";
 
 interface ExampleState {
   count: number;
@@ -18,8 +18,8 @@ export const useExampleStore = create<ExampleState>()(
         reset: () => set({ count: 0 }),
       }),
       {
-        name: 'example-storage',
-      }
-    )
-  )
+        name: "example-storage",
+      },
+    ),
+  ),
 );

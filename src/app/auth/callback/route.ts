@@ -1,10 +1,10 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
+  const code = requestUrl.searchParams.get("code");
   const origin = requestUrl.origin;
 
   if (code) {
@@ -25,30 +25,28 @@ export async function GET(request: Request) {
                 value,
                 ...options,
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                path: '/',
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "lax",
+                path: "/",
               });
-            } catch {
-            }
+            } catch {}
           },
           remove(name: string, options: CookieOptions) {
             try {
               cookieStore.set({
                 name,
-                value: '',
+                value: "",
                 ...options,
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                path: '/',
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "lax",
+                path: "/",
                 maxAge: 0,
               });
-            } catch {
-            }
+            } catch {}
           },
         },
-      }
+      },
     );
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);

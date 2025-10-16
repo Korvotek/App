@@ -1,31 +1,33 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
-import { AuthStatus } from '@/components/auth/auth-status';
-import { supabase } from '@/lib/supabase/client';
-import Link from 'next/link';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import { AuthStatus } from "@/components/auth/auth-status";
+import { supabase } from "@/lib/supabase/client";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token');
+    const accessToken = hashParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token");
 
     if (accessToken) {
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken || '',
-      }).then(({ error }) => {
-        if (!error) {
-          setTimeout(() => {
-            window.location.href = '/dashboard';
-          }, 1000);
-        }
-      });
+      supabase.auth
+        .setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || "",
+        })
+        .then(({ error }) => {
+          if (!error) {
+            setTimeout(() => {
+              window.location.href = "/dashboard";
+            }, 1000);
+          }
+        });
     }
   }, [router]);
 
@@ -36,7 +38,8 @@ export default function LoginPage() {
         <div
           className="hidden lg:flex lg:w-1/2 p-12 flex-col justify-center text-white"
           style={{
-            background: 'linear-gradient(135deg, rgb(54, 209, 197) 0%, rgb(43, 193, 181) 100%)',
+            background:
+              "linear-gradient(135deg, rgb(54, 209, 197) 0%, rgb(43, 193, 181) 100%)",
           }}
         >
           <div>
@@ -61,7 +64,11 @@ export default function LoginPage() {
 
             {/* Google Sign In Button */}
             <GoogleSignInButton className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-medium py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-700 transition-colors duration-200 flex items-center justify-center gap-3 shadow-sm">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <svg
+                className="w-5 h-5"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                   fill="#4285F4"
@@ -85,14 +92,14 @@ export default function LoginPage() {
             {/* Terms and Privacy */}
             <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800">
               <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-                Ao continuar, você concorda com nossos{' '}
+                Ao continuar, você concorda com nossos{" "}
                 <Link
                   href="/termos"
                   className="text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   Termos de Serviço
-                </Link>{' '}
-                e{' '}
+                </Link>{" "}
+                e{" "}
                 <Link
                   href="/privacidade"
                   className="text-blue-600 dark:text-blue-400 hover:underline"

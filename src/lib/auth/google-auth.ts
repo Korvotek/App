@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from "@/lib/supabase/client";
 
 export const auth = {
   signInWithGoogle: async () => {
     return await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
         queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
+          access_type: "offline",
+          prompt: "consent",
         },
       },
     });
@@ -28,7 +28,9 @@ export const auth = {
     return await supabase.auth.getSession();
   },
 
-  onAuthStateChange: (callback: Parameters<typeof supabase.auth.onAuthStateChange>[0]) => {
+  onAuthStateChange: (
+    callback: Parameters<typeof supabase.auth.onAuthStateChange>[0],
+  ) => {
     return supabase.auth.onAuthStateChange(callback);
   },
 };

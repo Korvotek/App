@@ -1,5 +1,5 @@
-export { supabase } from './client';
-export { createServerClient } from './server';
+export { supabase } from "./client";
+export { createServerClient } from "./server";
 
 export {
   useSupabaseQuery,
@@ -7,4 +7,4 @@ export {
   useSupabaseUpdate,
   useSupabaseDelete,
   useAuth,
-} from './hooks';
+} from "./hooks";

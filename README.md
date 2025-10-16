@@ -50,6 +50,7 @@ npm install
 ### Configuração do Supabase
 
 1. Copie o arquivo `.env.example` para `.env.local`:
+
 ```bash
 cp .env.example .env.local
 ```
@@ -60,6 +61,7 @@ cp .env.example .env.local
    - Cole no arquivo `.env.local`
 
 3. Gere os tipos TypeScript do banco de dados:
+
 ```bash
 npm run supabase:types
 ```
@@ -96,11 +98,13 @@ O projeto utiliza Google OAuth através do Supabase Auth:
 - ✅ Hooks personalizados para estado de auth
 
 **Páginas:**
+
 - [/login](src/app/login/page.tsx) - Tela de login com Google
 - [/dashboard](src/app/dashboard/page.tsx) - Dashboard protegido
 - [/auth/callback](src/app/auth/callback/route.ts) - Callback OAuth
 
 **Componentes:**
+
 - `<GoogleSignInButton />` - Botão de login
 - `<SignOutButton />` - Botão de logout
 - `useAuth()` - Hook para estado de autenticação
@@ -110,12 +114,14 @@ Para configurar a autenticação Google, veja [AUTHENTICATION.md](AUTHENTICATION
 ### React Query
 
 O provider do React Query está configurado em [src/providers/query-provider.tsx](src/providers/query-provider.tsx) com:
+
 - Stale time de 1 minuto
 - DevTools habilitados em desenvolvimento
 
 ### Zustand
 
 Exemplo de store em [src/store/example-store.ts](src/store/example-store.ts) com:
+
 - DevTools habilitados
 - Persistência no localStorage
 
@@ -128,46 +134,47 @@ Schema de validação de exemplo em [src/lib/validations/example-schema.ts](src/
 O projeto está conectado ao Supabase (ID: `ivqgfuxffqeebdtgoeyk`) com configuração completa:
 
 #### Client Components
+
 ```typescript
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from "@/lib/supabase/client";
 
 // Exemplo de uso
-const { data, error } = await supabase
-  .from('events')
-  .select('*');
+const { data, error } = await supabase.from("events").select("*");
 ```
 
 #### Server Components
+
 ```typescript
-import { createServerClient } from '@/lib/supabase/server';
+import { createServerClient } from "@/lib/supabase/server";
 
 // Exemplo de uso
 const supabase = createServerClient();
-const { data, error } = await supabase
-  .from('events')
-  .select('*');
+const { data, error } = await supabase.from("events").select("*");
 ```
 
 #### Hooks React Query + Supabase
+
 ```typescript
-import { useSupabaseQuery } from '@/lib/supabase';
+import { useSupabaseQuery } from "@/lib/supabase";
 
 // Exemplo de uso
-const { data, isLoading } = useSupabaseQuery<Event>('events');
+const { data, isLoading } = useSupabaseQuery<Event>("events");
 ```
 
 #### Tipos do Banco de Dados
 
 Os tipos são gerados automaticamente do banco Supabase:
+
 ```typescript
-import type { Database, Tables } from '@/lib/supabase/database.types';
+import type { Database, Tables } from "@/lib/supabase/database.types";
 
 // Usar tipos de tabelas
-type Event = Tables<'events'>;
-type Party = Tables<'parties'>;
+type Event = Tables<"events">;
+type Party = Tables<"parties">;
 ```
 
 Para atualizar os tipos após mudanças no banco:
+
 ```bash
 npm run supabase:types
 ```

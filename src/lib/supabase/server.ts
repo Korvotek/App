@@ -1,6 +1,9 @@
-import { createServerClient as createSupabaseServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import type { Database } from './database.types';
+import {
+  createServerClient as createSupabaseServerClient,
+  type CookieOptions,
+} from "@supabase/ssr";
+import { cookies } from "next/headers";
+import type { Database } from "./database.types";
 
 export async function createServerClient() {
   const cookieStore = await cookies();
@@ -8,7 +11,9 @@ export async function createServerClient() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase URL e Anon Key devem estar definidos nas variáveis de ambiente');
+    throw new Error(
+      "Supabase URL e Anon Key devem estar definidos nas variáveis de ambiente",
+    );
   }
 
   return createSupabaseServerClient<Database>(supabaseUrl, supabaseAnonKey, {
@@ -23,7 +28,7 @@ export async function createServerClient() {
       },
       remove(name: string, options: CookieOptions) {
         try {
-          cookieStore.set({ name, value: '', ...options });
+          cookieStore.set({ name, value: "", ...options });
         } catch {}
       },
     },

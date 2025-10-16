@@ -1,178 +1,206 @@
-import { createServerClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
-import { SignOutButton } from '@/components/auth/sign-out-button';
-import Image from 'next/image';
+import { createServerClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Calendar,
+  Users,
+  Car,
+  Settings,
+  Package,
+  UserPlus,
+  TrendingUp,
+  Activity,
+} from "lucide-react";
 
 export default async function DashboardPage() {
   const supabase = await createServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
   if (!session) {
-    redirect('/login');
+    redirect("/login");
   }
 
+  const stats = [
+    {
+      title: "Total de Eventos",
+      value: "0",
+      icon: Calendar,
+      color: "text-blue-600",
+    },
+    {
+      title: "Clientes Ativos",
+      value: "0",
+      icon: Users,
+      color: "text-green-600",
+    },
+    {
+      title: "Funcionários",
+      value: "0",
+      icon: UserPlus,
+      color: "text-yellow-600",
+    },
+    {
+      title: "Veículos Disponíveis",
+      value: "0",
+      icon: Car,
+      color: "text-purple-600",
+    },
+  ];
+
+  const quickActions = [
+    {
+      title: "Eventos",
+      description: "Gerencie todos os seus eventos e locações",
+      href: "/dashboard/eventos",
+      icon: Calendar,
+      color: "bg-blue-500/10 text-blue-600 border-blue-200",
+    },
+    {
+      title: "Clientes",
+      description: "Cadastro e gestão de clientes",
+      href: "/dashboard/clientes",
+      icon: Users,
+      color: "bg-green-500/10 text-green-600 border-green-200",
+    },
+    {
+      title: "Funcionários",
+      description: "Cadastro e gestão de funcionários",
+      href: "/dashboard/funcionarios",
+      icon: UserPlus,
+      color: "bg-yellow-500/10 text-yellow-600 border-yellow-200",
+    },
+    {
+      title: "Veículos",
+      description: "Controle de frota e veículos",
+      href: "/dashboard/veiculos",
+      icon: Car,
+      color: "bg-purple-500/10 text-purple-600 border-purple-200",
+    },
+    {
+      title: "Operações",
+      description: "Mobilização e desmobilização",
+      href: "/dashboard/operacoes",
+      icon: Settings,
+      color: "bg-orange-500/10 text-orange-600 border-orange-200",
+    },
+    {
+      title: "Produtos/Serviços",
+      description: "Catálogo de produtos e serviços",
+      href: "/dashboard/produtos",
+      icon: Package,
+      color: "bg-teal-500/10 text-teal-600 border-teal-200",
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#0a0e1a]">
-      {/* Header */}
-      <header className="bg-[#1e2738] border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-white">Sigelo</h1>
-            <span className="text-gray-500">|</span>
-            <span className="text-gray-400">Dashboard</span>
-          </div>
+    <div className="space-y-6">
+      {/* Welcome Section */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground mb-2">
+          Bem-vindo ao Sigelo! 👋
+        </h1>
+        <p className="text-muted-foreground text-lg">
+          Sistema inteligente de gerenciamento de locação
+        </p>
+      </div>
 
-          <div className="flex items-center gap-4">
-            {session.user.user_metadata?.avatar_url && (
-              <Image
-                src={session.user.user_metadata.avatar_url}
-                alt="Avatar"
-                width={40}
-                height={40}
-                className="w-10 h-10 rounded-full"
-              />
-            )}
-            <div className="text-right">
-              <p className="text-white font-medium">
-                {session.user.user_metadata?.full_name || session.user.email}
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat) => (
+          <Card key={stat.title}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {stat.title}
+              </CardTitle>
+              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-xs text-muted-foreground">
+                <TrendingUp className="inline h-3 w-3 mr-1" />
+                +0% em relação ao mês passado
               </p>
-              <p className="text-gray-500 text-sm">{session.user.email}</p>
-            </div>
-            <SignOutButton className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors" />
-          </div>
-        </div>
-      </header>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-8 py-12">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-white mb-2">
-            Bem-vindo ao Sigelo! 👋
-          </h2>
-          <p className="text-gray-400 text-lg">
-            Sistema inteligente de gerenciamento de locação
-          </p>
-        </div>
-
-        {/* Cards Grid */}
+      {/* Quick Actions */}
+      <div>
+        <h2 className="text-2xl font-bold text-foreground mb-4">
+          Ações Rápidas
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Card 1 - Eventos */}
-          <div className="bg-[#1e2738] border border-gray-700 rounded-xl p-6 hover:border-teal-500 transition-colors">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-teal-500/20 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">📅</span>
-              </div>
-              <h3 className="text-xl font-semibold text-white">Eventos</h3>
-            </div>
-            <p className="text-gray-400 mb-4">
-              Gerencie todos os seus eventos e locações
-            </p>
-            <button className="text-teal-500 hover:text-teal-400 font-medium">
-              Ver eventos →
-            </button>
-          </div>
-
-          {/* Card 2 - Clientes */}
-          <div className="bg-[#1e2738] border border-gray-700 rounded-xl p-6 hover:border-teal-500 transition-colors">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">👥</span>
-              </div>
-              <h3 className="text-xl font-semibold text-white">Clientes</h3>
-            </div>
-            <p className="text-gray-400 mb-4">
-              Cadastro e gestão de clientes
-            </p>
-            <button className="text-blue-500 hover:text-blue-400 font-medium">
-              Ver clientes →
-            </button>
-          </div>
-
-          {/* Card 3 - Veículos */}
-          <div className="bg-[#1e2738] border border-gray-700 rounded-xl p-6 hover:border-teal-500 transition-colors">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">🚗</span>
-              </div>
-              <h3 className="text-xl font-semibold text-white">Veículos</h3>
-            </div>
-            <p className="text-gray-400 mb-4">
-              Controle de frota e veículos
-            </p>
-            <button className="text-purple-500 hover:text-purple-400 font-medium">
-              Ver veículos →
-            </button>
-          </div>
-
-          {/* Card 4 - Operações */}
-          <div className="bg-[#1e2738] border border-gray-700 rounded-xl p-6 hover:border-teal-500 transition-colors">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">⚙️</span>
-              </div>
-              <h3 className="text-xl font-semibold text-white">Operações</h3>
-            </div>
-            <p className="text-gray-400 mb-4">
-              Mobilização e desmobilização
-            </p>
-            <button className="text-orange-500 hover:text-orange-400 font-medium">
-              Ver operações →
-            </button>
-          </div>
-
-          {/* Card 5 - Produtos/Serviços */}
-          <div className="bg-[#1e2738] border border-gray-700 rounded-xl p-6 hover:border-teal-500 transition-colors">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">📦</span>
-              </div>
-              <h3 className="text-xl font-semibold text-white">Produtos/Serviços</h3>
-            </div>
-            <p className="text-gray-400 mb-4">
-              Catálogo de produtos e serviços
-            </p>
-            <button className="text-green-500 hover:text-green-400 font-medium">
-              Ver catálogo →
-            </button>
-          </div>
-
-          {/* Card 6 - Relatórios */}
-          <div className="bg-[#1e2738] border border-gray-700 rounded-xl p-6 hover:border-teal-500 transition-colors">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-pink-500/20 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">📊</span>
-              </div>
-              <h3 className="text-xl font-semibold text-white">Relatórios</h3>
-            </div>
-            <p className="text-gray-400 mb-4">
-              Análises e relatórios do sistema
-            </p>
-            <button className="text-pink-500 hover:text-pink-400 font-medium">
-              Ver relatórios →
-            </button>
-          </div>
+          {quickActions.map((action) => (
+            <Card
+              key={action.title}
+              className="hover:shadow-md transition-shadow"
+            >
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${action.color}`}>
+                    <action.icon className="h-6 w-6" />
+                  </div>
+                  <CardTitle className="text-lg">{action.title}</CardTitle>
+                </div>
+                <CardDescription>{action.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href={action.href}>
+                  <Button variant="outline" className="w-full">
+                    Acessar
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ))}
         </div>
+      </div>
 
-        {/* Quick Stats */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl p-6">
-            <p className="text-white/80 text-sm font-medium mb-1">Total de Eventos</p>
-            <p className="text-white text-3xl font-bold">0</p>
-          </div>
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6">
-            <p className="text-white/80 text-sm font-medium mb-1">Clientes Ativos</p>
-            <p className="text-white text-3xl font-bold">0</p>
-          </div>
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6">
-            <p className="text-white/80 text-sm font-medium mb-1">Veículos Disponíveis</p>
-            <p className="text-white text-3xl font-bold">0</p>
-          </div>
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6">
-            <p className="text-white/80 text-sm font-medium mb-1">Operações Ativas</p>
-            <p className="text-white text-3xl font-bold">0</p>
-          </div>
-        </div>
-      </main>
+      {/* Recent Activity */}
+      <div>
+        <h2 className="text-2xl font-bold text-foreground mb-4">
+          Atividade Recente
+        </h2>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-lg">Últimas Atividades</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Sistema inicializado</p>
+                  <p className="text-xs text-muted-foreground">Agora mesmo</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Usuário logado</p>
+                  <p className="text-xs text-muted-foreground">
+                    Há alguns minutos
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
