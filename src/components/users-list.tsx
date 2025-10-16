@@ -27,6 +27,7 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 import { getUsers, updateUserRole, deactivateUser } from "@/actions/user-actions";
+import { PermissionGate } from "@/components/auth/permission-gate";
 import { toast } from "sonner";
 import { 
   MoreVertical, 
@@ -233,34 +234,36 @@ export function UsersList() {
                       </CardDescription>
                     </div>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleRoleChange(user.id, "ADMIN")}>
-                        <Shield className="h-4 w-4 mr-2" />
-                        Tornar Administrador
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleRoleChange(user.id, "OPERATOR")}>
-                        <UserCheck className="h-4 w-4 mr-2" />
-                        Tornar Operador
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleRoleChange(user.id, "VIEWER")}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Tornar Visualizador
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleDeactivateUser(user.id)}
-                        className="text-red-600"
-                      >
-                        <UserX className="h-4 w-4 mr-2" />
-                        Desativar Usuário
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <PermissionGate resource="users" action="update">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleRoleChange(user.id, "ADMIN")}>
+                          <Shield className="h-4 w-4 mr-2" />
+                          Tornar Administrador
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleRoleChange(user.id, "OPERATOR")}>
+                          <UserCheck className="h-4 w-4 mr-2" />
+                          Tornar Operador
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleRoleChange(user.id, "VIEWER")}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Tornar Visualizador
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDeactivateUser(user.id)}
+                          className="text-red-600"
+                        >
+                          <UserX className="h-4 w-4 mr-2" />
+                          Desativar Usuário
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </PermissionGate>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">

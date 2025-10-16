@@ -1,49 +1,133 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
-import type { User, Session } from "@supabase/supabase-js";
+import { createBrowserClient } from "@/lib/supabase/client";
+import { UserRole, hasPermission } from "@/lib/auth/permissions";
+import type { User } from "@supabase/supabase-js";
+
+interface UserWithRole {
+  user: User;
+  role: UserRole | null;
+}
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<UserWithRole | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   useEffect(() => {
-    const getSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    };
+    const getUser = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error || !user) {
+          setUser(null);
+          setLoading(false);
+          return;
+        }
 
-    getSession();
+        const { data: userData, error: userDataError } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", user.id)
+          .single();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
-        router.refresh();
+        if (userDataError) {
+          console.error("Error fetching user role:", userDataError);
+          setUser(null);
+        } else {
+          setUser({
+            user,
+            role: userData?.role as UserRole | null,
+          });
+        }
+      } catch (error) {
+        console.error("Error in useAuth:", error);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-    });
-
-    return () => {
-      subscription.unsubscribe();
     };
-  }, [router]);
+
+    getUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === "SIGNED_OUT" || !session) {
+          setUser(null);
+        } else if (session?.user) {
+          const { data: userData } = await supabase
+            .from("users")
+            .select("role")
+            .eq("id", session.user.id)
+            .single();
+
+          setUser({
+            user: session.user,
+            role: userData?.role as UserRole | null,
+          });
+        }
+        setLoading(false);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [router, supabase]);
+
+  const checkPermission = (resource: string, action: string): boolean => {
+    return hasPermission(user?.role || null, resource, action);
+  };
+
+  const requirePermission = (resource: string, action: string): boolean => {
+    const hasAccess = checkPermission(resource, action);
+    if (!hasAccess) {
+      router.push("/dashboard?error=unauthorized");
+    }
+    return hasAccess;
+  };
+
+  const requireRole = (requiredRole: UserRole): boolean => {
+    if (!user?.role) {
+      router.push("/login");
+      return false;
+    }
+
+    const roleHierarchy: Record<UserRole, number> = {
+      ADMIN: 3,
+      OPERATOR: 2,
+      VIEWER: 1,
+    };
+
+    const userLevel = roleHierarchy[user.role];
+    const requiredLevel = roleHierarchy[requiredRole];
+
+    if (userLevel < requiredLevel) {
+      router.push("/dashboard?error=insufficient_permissions");
+      return false;
+    }
+
+    return true;
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    router.push("/login");
+  };
 
   return {
-    user,
-    session,
+    user: user?.user || null,
+    role: user?.role || null,
     loading,
-    isAuthenticated: !!user,
+    checkPermission,
+    requirePermission,
+    requireRole,
+    signOut,
+    isAuthenticated: !!user?.user,
   };
 }

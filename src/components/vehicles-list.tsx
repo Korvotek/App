@@ -20,6 +20,7 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 import { getVehicles } from "@/actions/vehicle-actions";
+import { PermissionGate } from "@/components/auth/permission-gate";
 import Link from "next/link";
 import { Plus, Edit, Eye, Car } from "lucide-react";
 
@@ -113,12 +114,14 @@ export function VehiclesList() {
             Gerencie a frota de veículos da empresa
           </p>
         </div>
-        <Link href="/dashboard/veiculos/cadastrar">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Veículo
-          </Button>
-        </Link>
+        <PermissionGate resource="vehicles" action="create">
+          <Link href="/dashboard/veiculos/cadastrar">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Veículo
+            </Button>
+          </Link>
+        </PermissionGate>
       </div>
 
       <div className="flex items-center gap-4">
@@ -219,14 +222,18 @@ export function VehiclesList() {
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  <Button variant="outline" size="sm" className="flex-1">
-                    <Eye className="h-4 w-4 mr-1" />
-                    Ver
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
-                    <Edit className="h-4 w-4 mr-1" />
-                    Editar
-                  </Button>
+                  <PermissionGate resource="vehicles" action="read">
+                    <Button variant="outline" size="sm" className="flex-1">
+                      <Eye className="h-4 w-4 mr-1" />
+                      Ver
+                    </Button>
+                  </PermissionGate>
+                  <PermissionGate resource="vehicles" action="update">
+                    <Button variant="outline" size="sm" className="flex-1">
+                      <Edit className="h-4 w-4 mr-1" />
+                      Editar
+                    </Button>
+                  </PermissionGate>
                 </div>
               </CardContent>
             </Card>

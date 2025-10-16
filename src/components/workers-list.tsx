@@ -20,6 +20,7 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 import { getWorkers } from "@/actions/worker-actions";
+import { PermissionGate } from "@/components/auth/permission-gate";
 import Link from "next/link";
 import { Plus, Edit, Eye, Users } from "lucide-react";
 
@@ -113,12 +114,14 @@ export function WorkersList() {
             Gerencie os funcionários da empresa
           </p>
         </div>
-        <Link href="/dashboard/funcionarios/cadastrar">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Funcionário
-          </Button>
-        </Link>
+        <PermissionGate resource="employees" action="create">
+          <Link href="/dashboard/funcionarios/cadastrar">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Funcionário
+            </Button>
+          </Link>
+        </PermissionGate>
       </div>
 
       <div className="flex items-center gap-4">
@@ -228,14 +231,18 @@ export function WorkersList() {
                   </div>
 
                   <div className="flex gap-2 pt-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Eye className="h-4 w-4 mr-1" />
-                      Ver
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Edit className="h-4 w-4 mr-1" />
-                      Editar
-                    </Button>
+                    <PermissionGate resource="employees" action="read">
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <Eye className="h-4 w-4 mr-1" />
+                        Ver
+                      </Button>
+                    </PermissionGate>
+                    <PermissionGate resource="employees" action="update">
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <Edit className="h-4 w-4 mr-1" />
+                        Editar
+                      </Button>
+                    </PermissionGate>
                   </div>
                 </CardContent>
               </Card>
@@ -244,6 +251,7 @@ export function WorkersList() {
         </div>
       )}
 
+      {totalPages > 1 && (
         <div className="flex justify-center mt-8">
           <Pagination>
             <PaginationContent>
@@ -318,7 +326,7 @@ export function WorkersList() {
             </PaginationContent>
           </Pagination>
         </div>
-      )
+      )}
     </div>
   );
 }

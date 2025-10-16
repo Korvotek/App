@@ -19,6 +19,7 @@ import {
   Users,
   Activity,
 } from "lucide-react";
+import { PermissionGate } from "@/components/auth/permission-gate";
 import type { Session } from "@supabase/supabase-js";
 import { auth } from "@/lib/auth/google-auth";
 import { toast } from "sonner";
@@ -28,10 +29,30 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { icon: UserCog, label: "Funcionários", href: "/dashboard/funcionarios" },
-  { icon: Car, label: "Veículos", href: "/dashboard/veiculos" },
-  { icon: Users, label: "Usuários", href: "/dashboard/usuarios" },
-  { icon: Activity, label: "Auditoria", href: "/dashboard/auditoria" },
+  { 
+    icon: UserCog, 
+    label: "Funcionários", 
+    href: "/dashboard/funcionarios",
+    permission: { resource: "employees", action: "read" }
+  },
+  { 
+    icon: Car, 
+    label: "Veículos", 
+    href: "/dashboard/veiculos",
+    permission: { resource: "vehicles", action: "read" }
+  },
+  { 
+    icon: Users, 
+    label: "Usuários", 
+    href: "/dashboard/usuarios",
+    permission: { resource: "users", action: "read" }
+  },
+  { 
+    icon: Activity, 
+    label: "Auditoria", 
+    href: "/dashboard/auditoria",
+    permission: { resource: "audit", action: "read" }
+  },
 ];
 
 export function Sidebar({ session }: SidebarProps) {
@@ -118,25 +139,30 @@ export function Sidebar({ session }: SidebarProps) {
               const isActive = pathname === item.href;
 
               return (
-                <Link
+                <PermissionGate
                   key={item.href}
-                  href={item.href}
-                  className={`
-                    flex items-center gap-3 px-3 py-2 rounded-lg transition-colors
-                    ${
-                      isActive
-                        ? "bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    }
-                    ${collapsed ? "justify-center" : ""}
-                  `}
-                  title={collapsed ? item.label : undefined}
+                  resource={item.permission.resource}
+                  action={item.permission.action}
                 >
-                  <Icon className="h-5 w-5 flex-shrink-0" />
-                  {!collapsed && (
-                    <span className="text-sm font-medium">{item.label}</span>
-                  )}
-                </Link>
+                  <Link
+                    href={item.href}
+                    className={`
+                      flex items-center gap-3 px-3 py-2 rounded-lg transition-colors
+                      ${
+                        isActive
+                          ? "bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      }
+                      ${collapsed ? "justify-center" : ""}
+                    `}
+                    title={collapsed ? item.label : undefined}
+                  >
+                    <Icon className="h-5 w-5 flex-shrink-0" />
+                    {!collapsed && (
+                      <span className="text-sm font-medium">{item.label}</span>
+                    )}
+                  </Link>
+                </PermissionGate>
               );
             })}
           </nav>
