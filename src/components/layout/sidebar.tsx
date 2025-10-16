@@ -21,8 +21,7 @@ import {
 } from "lucide-react";
 import { PermissionGate } from "@/components/auth/permission-gate";
 import type { Session } from "@supabase/supabase-js";
-import { auth } from "@/lib/auth/google-auth";
-import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 interface SidebarProps {
   session: Session;
@@ -59,24 +58,20 @@ export function Sidebar({ session }: SidebarProps) {
   const { collapsed, setCollapsed } = useSidebar();
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+  const { userData, signOut } = useAuth();
 
   const handleSignOut = async () => {
-    const { error } = await auth.signOut();
-    if (error) {
-      toast.error("Erro ao fazer logout");
-    } else {
-      toast.success("Logout realizado com sucesso!");
-      window.location.href = "/";
-    }
+    await signOut();
   };
 
-  const userInitials =
-    session.user.user_metadata?.full_name
-      ?.split(" ")
-      .map((n: string) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2) || session.user.email?.slice(0, 2).toUpperCase();
+  const userInitials = userData?.full_name
+    ? userData.full_name
+        .split(" ")
+        .map((name) => name[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : userData?.email?.slice(0, 2).toUpperCase() || "U";
 
   return (
     <aside
@@ -112,7 +107,7 @@ export function Sidebar({ session }: SidebarProps) {
         <div className="px-4 py-3">
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={session.user.user_metadata?.avatar_url} />
+              <AvatarImage src={userData?.picture_url || session.user.user_metadata?.avatar_url} />
               <AvatarFallback className="bg-teal-600 text-white">
                 {userInitials}
               </AvatarFallback>
@@ -120,10 +115,10 @@ export function Sidebar({ session }: SidebarProps) {
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {session.user.user_metadata?.full_name || "Usuário"}
+                  {userData?.full_name || session.user.user_metadata?.full_name || "Usuário"}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {session.user.email}
+                  {userData?.email || session.user.email}
                 </p>
               </div>
             )}

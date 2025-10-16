@@ -9,6 +9,18 @@ import type { User } from "@supabase/supabase-js";
 interface UserWithRole {
   user: User;
   role: UserRole | null;
+  userData: {
+    id: string;
+    email: string;
+    full_name: string | null;
+    picture_url: string | null;
+    role: UserRole | null;
+    tenant_id: string | null;
+    active: boolean | null;
+    created_at: string | null;
+    last_login_at: string | null;
+    last_activity_at: string | null;
+  } | null;
 }
 
 export function useAuth() {
@@ -33,7 +45,18 @@ export function useAuth() {
 
         const { data: userData, error: userDataError } = await supabase
           .from("users")
-          .select("role")
+          .select(`
+            id,
+            email,
+            full_name,
+            picture_url,
+            role,
+            tenant_id,
+            active,
+            created_at,
+            last_login_at,
+            last_activity_at
+          `)
           .eq("id", user.id)
           .single();
 
@@ -44,6 +67,7 @@ export function useAuth() {
           setUser({
             user,
             role: userData?.role as UserRole | null,
+            userData: userData,
           });
         }
       } catch (error) {
@@ -63,13 +87,25 @@ export function useAuth() {
         } else if (session?.user) {
           const { data: userData } = await supabase
             .from("users")
-            .select("role")
+            .select(`
+              id,
+              email,
+              full_name,
+              picture_url,
+              role,
+              tenant_id,
+              active,
+              created_at,
+              last_login_at,
+              last_activity_at
+            `)
             .eq("id", session.user.id)
             .single();
 
           setUser({
             user: session.user,
             role: userData?.role as UserRole | null,
+            userData: userData,
           });
         }
         setLoading(false);
@@ -122,6 +158,7 @@ export function useAuth() {
 
   return {
     user: user?.user || null,
+    userData: user?.userData || null,
     role: user?.role || null,
     loading,
     checkPermission,
