@@ -86,6 +86,27 @@ npm start
 
 ## Recursos Configurados
 
+### Autenticação (Google SSO)
+
+O projeto utiliza Google OAuth através do Supabase Auth:
+
+- ✅ Login com Google (SSO)
+- ✅ Proteção de rotas com middleware
+- ✅ Sessões persistentes e seguras
+- ✅ Hooks personalizados para estado de auth
+
+**Páginas:**
+- [/login](src/app/login/page.tsx) - Tela de login com Google
+- [/dashboard](src/app/dashboard/page.tsx) - Dashboard protegido
+- [/auth/callback](src/app/auth/callback/route.ts) - Callback OAuth
+
+**Componentes:**
+- `<GoogleSignInButton />` - Botão de login
+- `<SignOutButton />` - Botão de logout
+- `useAuth()` - Hook para estado de autenticação
+
+Para configurar a autenticação Google, veja [AUTHENTICATION.md](AUTHENTICATION.md)
+
 ### React Query
 
 O provider do React Query está configurado em [src/providers/query-provider.tsx](src/providers/query-provider.tsx) com:
@@ -161,12 +182,21 @@ npx shadcn@latest add form
 npx shadcn@latest add input
 ```
 
+## Documentação Adicional
+
+- 📖 [AUTHENTICATION.md](AUTHENTICATION.md) - Guia completo de autenticação Google SSO
+- 🚀 [DEPLOYMENT.md](DEPLOYMENT.md) - Guia de deploy na Vercel
+- 📋 [Termos de Serviço](src/app/termos/page.tsx)
+- 🔒 [Política de Privacidade](src/app/privacidade/page.tsx)
+
 ## Saiba Mais
 
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Supabase Documentation](https://supabase.com/docs)
+- [Supabase Auth](https://supabase.com/docs/guides/auth)
 - [React Query](https://tanstack.com/query/latest)
 - [Zustand](https://docs.pmnd.rs/zustand/getting-started/introduction)
 - [React Hook Form](https://react-hook-form.com/)
 - [Zod](https://zod.dev/)
 - [shadcn/ui](https://ui.shadcn.com/)
+- [Vercel Deployment](https://vercel.com/docs)
