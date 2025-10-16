@@ -106,7 +106,6 @@ export function WorkersList() {
 
   return (
     <div className="w-full space-y-4">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">Funcionários</h1>
@@ -122,7 +121,6 @@ export function WorkersList() {
         </Link>
       </div>
 
-      {/* Search */}
       <div className="flex items-center gap-4">
         <div className="flex-1 max-w-md">
           <input
@@ -138,7 +136,6 @@ export function WorkersList() {
         </div>
       </div>
 
-      {/* Workers Grid */}
       {filteredWorkers.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -247,8 +244,6 @@ export function WorkersList() {
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
         <div className="flex justify-center mt-8">
           <Pagination>
             <PaginationContent>
@@ -268,7 +263,6 @@ export function WorkersList() {
                 />
               </PaginationItem>
 
-              {/* Page numbers */}
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let pageNumber;
                 if (totalPages <= 5) {
@@ -324,7 +318,7 @@ export function WorkersList() {
             </PaginationContent>
           </Pagination>
         </div>
-      )}
+      )
     </div>
   );
 }

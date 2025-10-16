@@ -43,8 +43,9 @@ export function WorkerRegistrationForm() {
   const onSubmit = async (data: WorkerRegistrationData) => {
     setIsSubmitting(true);
     try {
-      await registerWorker(data);
-      toast.success("Funcionário registrado com sucesso!");
+      const result = await registerWorker(data);
+      toast.success(result.message);
+      router.push("/dashboard/funcionarios?success=true");
     } catch (error) {
       console.error("Erro ao registrar funcionário:", error);
       toast.error(

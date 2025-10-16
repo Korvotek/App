@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { createServerClient } from "@/lib/supabase/server";
+import { getCurrentUserAndTenant } from "@/lib/auth/server-helpers";
 import {
   workerRegistrationSchema,
   type WorkerRegistrationData,
@@ -16,39 +15,15 @@ type PartyEmployeeInsert =
   Database["public"]["Tables"]["party_employees"]["Insert"];
 
 export async function registerWorker(formData: WorkerRegistrationData) {
-  const supabase = await createServerClient();
-
-  // Get current user and tenant
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError || !user) {
-    throw new Error("Usuário não autenticado");
-  }
-
-  const { data: userData, error: userDataError } = await supabase
-    .from("users")
-    .select("tenant_id")
-    .eq("id", user.id)
-    .single();
-
-  if (userDataError || !userData?.tenant_id) {
-    throw new Error("Tenant não encontrado");
-  }
-
-  const tenantId = userData.tenant_id;
-
-  // Validate form data
+  const { user, tenantId, supabase } = await getCurrentUserAndTenant();
   const validatedData = workerRegistrationSchema.parse(formData);
 
   try {
-    // Start transaction by creating party first
     const partyData: PartyInsert = {
       tenant_id: tenantId,
       party_type: "EMPLOYEE",
       display_name: validatedData.display_name,
-      full_name: validatedData.display_name, // Usar o mesmo nome para ambos
+      full_name: validatedData.display_name,
       cpf: validatedData.cpf,
       active: true,
     };
@@ -63,10 +38,8 @@ export async function registerWorker(formData: WorkerRegistrationData) {
       throw new Error(`Erro ao criar funcionário: ${partyError.message}`);
     }
 
-    // Create contacts
     const contactsData: PartyContactInsert[] = [];
 
-    // Add phone only if provided
     if (validatedData.phone && validatedData.phone.trim() !== "") {
       contactsData.push({
         tenant_id: tenantId,
@@ -77,14 +50,13 @@ export async function registerWorker(formData: WorkerRegistrationData) {
       });
     }
 
-    // Add email only if provided
     if (validatedData.email && validatedData.email.trim() !== "") {
       contactsData.push({
         tenant_id: tenantId,
         party_id: party.id,
         contact_type: "EMAIL",
         contact_value: validatedData.email,
-        is_primary: contactsData.length === 0, // Primary if no phone
+        is_primary: contactsData.length === 0,
       });
     }
 
@@ -96,7 +68,6 @@ export async function registerWorker(formData: WorkerRegistrationData) {
       throw new Error(`Erro ao criar contatos: ${contactsError.message}`);
     }
 
-    // Create employee record
     const employeeData: PartyEmployeeInsert = {
       tenant_id: tenantId,
       party_id: party.id,
@@ -116,7 +87,6 @@ export async function registerWorker(formData: WorkerRegistrationData) {
       );
     }
 
-    // Create party role
     const { error: roleError } = await supabase.from("party_roles").insert({
       tenant_id: tenantId,
       party_id: party.id,
@@ -129,7 +99,6 @@ export async function registerWorker(formData: WorkerRegistrationData) {
       throw new Error(`Erro ao criar função: ${roleError.message}`);
     }
 
-    // Log activity
     await supabase.from("activity_logs").insert({
       tenant_id: tenantId,
       user_id: user.id,
@@ -148,38 +117,19 @@ export async function registerWorker(formData: WorkerRegistrationData) {
   }
 
   revalidatePath("/dashboard/funcionarios");
-  redirect("/dashboard/funcionarios?success=true");
+  return { success: true, message: "Funcionário cadastrado com sucesso!" };
 }
 
 export async function getWorkers(page: number = 1, limit: number = 12) {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError || !user) {
-    throw new Error("Usuário não autenticado");
-  }
-
-  const { data: userData, error: userDataError } = await supabase
-    .from("users")
-    .select("tenant_id")
-    .eq("id", user.id)
-    .single();
-
-  if (userDataError || !userData?.tenant_id) {
-    throw new Error("Tenant não encontrado");
-  }
+  const { tenantId, supabase } = await getCurrentUserAndTenant();
 
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  // Get total count
   const { count: totalCount, error: countError } = await supabase
     .from("parties")
     .select("*", { count: "exact", head: true })
-    .eq("tenant_id", userData.tenant_id)
+    .eq("tenant_id", tenantId)
     .eq("party_type", "EMPLOYEE")
     .eq("active", true);
 
@@ -187,8 +137,6 @@ export async function getWorkers(page: number = 1, limit: number = 12) {
     console.error("Error counting workers:", countError);
     return null;
   }
-
-  // Get paginated workers
   const { data: workers, error } = await supabase
     .from("parties")
     .select(
@@ -211,7 +159,7 @@ export async function getWorkers(page: number = 1, limit: number = 12) {
       )
     `,
     )
-    .eq("tenant_id", userData.tenant_id)
+    .eq("tenant_id", tenantId)
     .eq("party_type", "EMPLOYEE")
     .eq("active", true)
     .order("display_name")

@@ -106,7 +106,6 @@ export function VehiclesList() {
 
   return (
     <div className="w-full space-y-4">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">Veículos</h1>
@@ -122,7 +121,6 @@ export function VehiclesList() {
         </Link>
       </div>
 
-      {/* Search */}
       <div className="flex items-center gap-4">
         <div className="flex-1 max-w-md">
           <input
@@ -138,7 +136,6 @@ export function VehiclesList() {
         </div>
       </div>
 
-      {/* Vehicles Grid */}
       {filteredVehicles.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -237,7 +234,6 @@ export function VehiclesList() {
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center mt-8">
           <Pagination>
@@ -258,7 +254,6 @@ export function VehiclesList() {
                 />
               </PaginationItem>
 
-              {/* Page numbers */}
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let pageNumber;
                 if (totalPages <= 5) {

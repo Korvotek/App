@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { createServerClient } from "@/lib/supabase/server";
+import { getCurrentUserAndTenant } from "@/lib/auth/server-helpers";
 import {
   vehicleRegistrationSchema,
   type VehicleRegistrationData,
@@ -12,34 +11,10 @@ import type { Database } from "@/lib/supabase/database.types";
 type VehicleInsert = Database["public"]["Tables"]["vehicles"]["Insert"];
 
 export async function registerVehicle(formData: VehicleRegistrationData) {
-  const supabase = await createServerClient();
-
-  // Get current user and tenant
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError || !user) {
-    throw new Error("Usuário não autenticado");
-  }
-
-  const { data: userData, error: userDataError } = await supabase
-    .from("users")
-    .select("tenant_id")
-    .eq("id", user.id)
-    .single();
-
-  if (userDataError || !userData?.tenant_id) {
-    throw new Error("Tenant não encontrado");
-  }
-
-  const tenantId = userData.tenant_id;
-
-  // Validate form data
+  const { user, tenantId, supabase } = await getCurrentUserAndTenant();
   const validatedData = vehicleRegistrationSchema.parse(formData);
 
   try {
-    // Create vehicle
     const vehicleData: VehicleInsert = {
       tenant_id: tenantId,
       brand: validatedData.brand,
@@ -62,11 +37,10 @@ export async function registerVehicle(formData: VehicleRegistrationData) {
       throw new Error(`Erro ao criar veículo: ${vehicleError.message}`);
     }
 
-    // Log activity
     await supabase.from("activity_logs").insert({
       tenant_id: tenantId,
       user_id: user.id,
-      action_type: "CREATE_EMPLOYEE", // Using existing action type
+      action_type: "CREATE_EMPLOYEE",
       entity_id: vehicle.id,
       entity_type: "vehicle",
       success: true,
@@ -82,46 +56,25 @@ export async function registerVehicle(formData: VehicleRegistrationData) {
   }
 
   revalidatePath("/dashboard/veiculos");
-  redirect("/dashboard/veiculos?success=true");
+  return { success: true, message: "Veículo cadastrado com sucesso!" };
 }
 
 export async function getVehicles(page: number = 1, limit: number = 12) {
-  const supabase = await createServerClient();
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError || !user) {
-    throw new Error("Usuário não autenticado");
-  }
-
-  const { data: userData, error: userDataError } = await supabase
-    .from("users")
-    .select("tenant_id")
-    .eq("id", user.id)
-    .single();
-
-  if (userDataError || !userData?.tenant_id) {
-    throw new Error("Tenant não encontrado");
-  }
+  const { tenantId, supabase } = await getCurrentUserAndTenant();
 
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  // Get total count
   const { count: totalCount, error: countError } = await supabase
     .from("vehicles")
     .select("*", { count: "exact", head: true })
-    .eq("tenant_id", userData.tenant_id)
+    .eq("tenant_id", tenantId)
     .eq("active", true);
 
   if (countError) {
     console.error("Error counting vehicles:", countError);
     return null;
   }
-
-  // Get paginated vehicles
   const { data: vehicles, error } = await supabase
     .from("vehicles")
     .select(
@@ -138,7 +91,7 @@ export async function getVehicles(page: number = 1, limit: number = 12) {
       created_at
     `,
     )
-    .eq("tenant_id", userData.tenant_id)
+    .eq("tenant_id", tenantId)
     .eq("active", true)
     .order("brand")
     .range(from, to);

@@ -56,8 +56,8 @@ export function VehicleRegistrationForm() {
   const onSubmit = async (data: VehicleRegistrationData) => {
     setIsSubmitting(true);
     try {
-      await registerVehicle(data);
-      toast.success("Veículo cadastrado com sucesso!");
+      const result = await registerVehicle(data);
+      toast.success(result.message);
       router.push("/dashboard/veiculos?success=true");
     } catch (error: unknown) {
       const errorMessage =
@@ -82,7 +82,6 @@ export function VehicleRegistrationForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Informações Básicas */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Informações Básicas</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -142,7 +141,6 @@ export function VehicleRegistrationForm() {
             </div>
           </div>
 
-          {/* Informações Técnicas */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Informações Técnicas</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -203,7 +201,6 @@ export function VehicleRegistrationForm() {
             </div>
           </div>
 
-          {/* Botões */}
           <div className="flex justify-end gap-4 pt-6">
             <Button type="button" variant="outline" onClick={handleCancel}>
               Cancelar
