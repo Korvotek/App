@@ -68,7 +68,7 @@ export function VehiclesList() {
     (vehicle) =>
       vehicle.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vehicle.license_plate.toLowerCase().includes(searchTerm.toLowerCase())
+      vehicle.license_plate.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const getVehicleTypeLabel = (type: string | null) => {
@@ -168,7 +168,10 @@ export function VehiclesList() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
           {filteredVehicles.map((vehicle) => (
-            <Card key={vehicle.id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={vehicle.id}
+              className="hover:shadow-md transition-shadow"
+            >
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
@@ -192,7 +195,7 @@ export function VehiclesList() {
                     <Badge
                       variant="outline"
                       className={`text-xs ${getVehicleTypeColor(
-                        vehicle.vehicle_type
+                        vehicle.vehicle_type,
                       )}`}
                     >
                       {getVehicleTypeLabel(vehicle.vehicle_type)}

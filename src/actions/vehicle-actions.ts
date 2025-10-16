@@ -124,7 +124,8 @@ export async function getVehicles(page: number = 1, limit: number = 12) {
   // Get paginated vehicles
   const { data: vehicles, error } = await supabase
     .from("vehicles")
-    .select(`
+    .select(
+      `
       id,
       brand,
       model,
@@ -135,7 +136,8 @@ export async function getVehicles(page: number = 1, limit: number = 12) {
       module_capacity,
       active,
       created_at
-    `)
+    `,
+    )
     .eq("tenant_id", userData.tenant_id)
     .eq("active", true)
     .order("brand")

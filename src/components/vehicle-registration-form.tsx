@@ -60,7 +60,8 @@ export function VehicleRegistrationForm() {
       toast.success("Veículo cadastrado com sucesso!");
       router.push("/dashboard/veiculos?success=true");
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Erro ao cadastrar veículo.";
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro ao cadastrar veículo.";
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -183,7 +184,9 @@ export function VehicleRegistrationForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="module_capacity">Capacidade do Módulo (L)</Label>
+                <Label htmlFor="module_capacity">
+                  Capacidade do Módulo (L)
+                </Label>
                 <Input
                   id="module_capacity"
                   type="number"
