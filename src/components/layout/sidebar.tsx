@@ -17,6 +17,7 @@ import {
   LogOut,
   Car,
   Users,
+  Activity,
 } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { auth } from "@/lib/auth/google-auth";
@@ -30,6 +31,7 @@ const menuItems = [
   { icon: UserCog, label: "Funcionários", href: "/dashboard/funcionarios" },
   { icon: Car, label: "Veículos", href: "/dashboard/veiculos" },
   { icon: Users, label: "Usuários", href: "/dashboard/usuarios" },
+  { icon: Activity, label: "Auditoria", href: "/dashboard/auditoria" },
 ];
 
 export function Sidebar({ session }: SidebarProps) {
