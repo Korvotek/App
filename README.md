@@ -1,36 +1,172 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sigelo
 
-## Getting Started
+Projeto criado com Next.js 15 e as melhores bibliotecas do ecossistema React.
 
-First, run the development server:
+## Stack Tecnológica
+
+- **Next.js 15** (App Router) - Framework React com SSR e SSG
+- **React 19** - Biblioteca para construção de interfaces
+- **TypeScript** - Tipagem estática para JavaScript
+- **Tailwind CSS** - Framework CSS utility-first
+- **shadcn/ui** - Componentes de UI reutilizáveis e acessíveis
+- **Supabase** - Backend as a Service (PostgreSQL + Auth + Storage)
+- **TanStack Query (React Query)** - Gerenciamento de estado assíncrono e cache
+- **Zustand** - Gerenciamento de estado global
+- **React Hook Form** - Gerenciamento de formulários performático
+- **Zod** - Validação de schemas TypeScript-first
+
+## Estrutura do Projeto
+
+```
+sigelo/
+├── src/
+│   ├── app/                    # App Router do Next.js
+│   │   ├── layout.tsx          # Layout raiz com providers
+│   │   └── page.tsx            # Página inicial
+│   ├── components/             # Componentes React
+│   │   └── ui/                 # Componentes shadcn/ui
+│   ├── lib/                    # Utilitários e configurações
+│   │   ├── supabase/           # Configuração Supabase
+│   │   │   ├── client.ts       # Cliente Supabase (Client Components)
+│   │   │   ├── server.ts       # Cliente Supabase (Server Components)
+│   │   │   ├── hooks.ts        # Hooks React Query + Supabase
+│   │   │   └── database.types.ts # Tipos TypeScript do banco
+│   │   ├── utils.ts            # Funções utilitárias
+│   │   └── validations/        # Schemas Zod
+│   ├── providers/              # Context Providers
+│   │   └── query-provider.tsx  # Provider do React Query
+│   └── store/                  # Stores Zustand
+│       └── example-store.ts    # Exemplo de store
+```
+
+## Começando
+
+### Instalação
+
+```bash
+npm install
+```
+
+### Configuração do Supabase
+
+1. Copie o arquivo `.env.example` para `.env.local`:
+```bash
+cp .env.example .env.local
+```
+
+2. Obtenha sua `ANON_KEY` do Supabase:
+   - Acesse https://supabase.com/dashboard/project/ivqgfuxffqeebdtgoeyk/settings/api
+   - Copie a chave `anon` / `public`
+   - Cole no arquivo `.env.local`
+
+3. Gere os tipos TypeScript do banco de dados:
+```bash
+npm run supabase:types
+```
+
+### Desenvolvimento
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+```
 
-## Learn More
+### Produção
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Recursos Configurados
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### React Query
 
-## Deploy on Vercel
+O provider do React Query está configurado em [src/providers/query-provider.tsx](src/providers/query-provider.tsx) com:
+- Stale time de 1 minuto
+- DevTools habilitados em desenvolvimento
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Zustand
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Exemplo de store em [src/store/example-store.ts](src/store/example-store.ts) com:
+- DevTools habilitados
+- Persistência no localStorage
+
+### React Hook Form + Zod
+
+Schema de validação de exemplo em [src/lib/validations/example-schema.ts](src/lib/validations/example-schema.ts)
+
+### Supabase
+
+O projeto está conectado ao Supabase (ID: `ivqgfuxffqeebdtgoeyk`) com configuração completa:
+
+#### Client Components
+```typescript
+import { supabase } from '@/lib/supabase/client';
+
+// Exemplo de uso
+const { data, error } = await supabase
+  .from('events')
+  .select('*');
+```
+
+#### Server Components
+```typescript
+import { createServerClient } from '@/lib/supabase/server';
+
+// Exemplo de uso
+const supabase = createServerClient();
+const { data, error } = await supabase
+  .from('events')
+  .select('*');
+```
+
+#### Hooks React Query + Supabase
+```typescript
+import { useSupabaseQuery } from '@/lib/supabase';
+
+// Exemplo de uso
+const { data, isLoading } = useSupabaseQuery<Event>('events');
+```
+
+#### Tipos do Banco de Dados
+
+Os tipos são gerados automaticamente do banco Supabase:
+```typescript
+import type { Database, Tables } from '@/lib/supabase/database.types';
+
+// Usar tipos de tabelas
+type Event = Tables<'events'>;
+type Party = Tables<'parties'>;
+```
+
+Para atualizar os tipos após mudanças no banco:
+```bash
+npm run supabase:types
+```
+
+### shadcn/ui
+
+Componentes podem ser adicionados com:
+
+```bash
+npx shadcn@latest add button
+npx shadcn@latest add form
+npx shadcn@latest add input
+```
+
+## Saiba Mais
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Supabase Documentation](https://supabase.com/docs)
+- [React Query](https://tanstack.com/query/latest)
+- [Zustand](https://docs.pmnd.rs/zustand/getting-started/introduction)
+- [React Hook Form](https://react-hook-form.com/)
+- [Zod](https://zod.dev/)
+- [shadcn/ui](https://ui.shadcn.com/)
