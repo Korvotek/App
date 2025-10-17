@@ -1,0 +1,15 @@
+# Script para adicionar variáveis de ambiente no Vercel
+$envVars = @{
+    "NEXT_PUBLIC_SUPABASE_URL" = "https://ivqgfuxffqeebdtgoeyk.supabase.co"
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY" = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2cWdmdXhmZnFlZWJkdGdvZXlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2MTI2MDYsImV4cCI6MjA3NjE4ODYwNn0.ywZ_oEv6s5CD26zHzyx_bh99HqCYd55fUskGyBpDd8U"
+    "NODE_ENV" = "production"
+    "NEXT_PUBLIC_CONTA_AZUL_CLIENT_ID" = "mqgrgqunpa34g7t8b35qvcia3"
+    "CONTA_AZUL_CLIENT_SECRET" = "ao9clppnmmp17ftujp00rfjv65qcitaq5h5t517nluupkmirp81"
+    "CONTA_AZUL_SCOPES" = "openid profile aws.cognito.signin.user.admin"
+}
+
+foreach ($var in $envVars.GetEnumerator()) {
+    Write-Host "Adicionando $($var.Key) = $($var.Value)"
+    # Simular o comando vercel env add
+    Write-Host "vercel env add $($var.Key) production"
+}
