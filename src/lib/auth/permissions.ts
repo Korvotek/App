@@ -27,6 +27,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
 };
 
+export const ROLE_HIERARCHY: Record<UserRole, number> = {
+  ADMIN: 3,
+  OPERATOR: 2,
+  VIEWER: 1,
+};
+
 export function hasPermission(
   userRole: UserRole | null,
   resource: string,
@@ -40,6 +46,15 @@ export function hasPermission(
   );
 
   return resourcePermission?.actions.includes(action) ?? false;
+}
+
+export function hasRole(
+  userRole: UserRole | null,
+  requiredRole: UserRole,
+): boolean {
+  if (!userRole) return false;
+
+  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];
 }
 
 export function canAccessRoute(
@@ -77,4 +92,3 @@ export function canAccessRoute(
 
   return hasAccess;
 }
-

@@ -10,7 +10,12 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
-import { UserRole, hasPermission } from "@/lib/auth/permissions";
+import {
+  UserRole,
+  hasPermission,
+  hasRole as roleSatisfies,
+} from "@/lib/auth/permissions";
+import { auth } from "@/lib/auth/google-auth";
 import type { User } from "@supabase/supabase-js";
 
 type UserProfile = {
@@ -41,6 +46,7 @@ interface AuthContextValue {
   checkPermission: (resource: string, action: string) => boolean;
   requirePermission: (resource: string, action: string) => boolean;
   requireRole: (requiredRole: UserRole) => boolean;
+  hasRole: (requiredRole: UserRole) => boolean;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -248,6 +254,9 @@ export function AuthProvider({
     const checkPermission = (resource: string, action: string) =>
       hasPermission(state.role, resource, action);
 
+    const hasRole = (requiredRole: UserRole) =>
+      roleSatisfies(state.role, requiredRole);
+
     const requirePermission = (resource: string, action: string) => {
       const allowed = checkPermission(resource, action);
       if (!allowed) {
@@ -262,13 +271,7 @@ export function AuthProvider({
         return false;
       }
 
-      const roleHierarchy: Record<UserRole, number> = {
-        ADMIN: 3,
-        OPERATOR: 2,
-        VIEWER: 1,
-      };
-
-      if (roleHierarchy[state.role] < roleHierarchy[requiredRole]) {
+      if (!hasRole(requiredRole)) {
         router.push("/dashboard?error=insufficient_permissions");
         return false;
       }
@@ -278,25 +281,9 @@ export function AuthProvider({
 
     const signOut = async () => {
       try {
-        await supabase.auth.signOut();
+        await auth.signOut();
       } catch (error) {
-        console.error("Error signing out:", error);
-      }
-
-      try {
-        const response = await fetch("/auth/signout", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          const { message } = await response.json();
-          console.error("Failed to clear server session:", message);
-        }
-      } catch (error) {
-        console.error("Error calling signout route:", error);
+        console.error("Error during sign out:", error);
       } finally {
         setState({
           user: null,
@@ -317,6 +304,7 @@ export function AuthProvider({
       checkPermission,
       requirePermission,
       requireRole,
+      hasRole,
       signOut,
       isAuthenticated: !!state.user,
     };
