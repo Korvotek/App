@@ -11,6 +11,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: "audit", actions: ["read"] },
     { resource: "employees", actions: ["read", "create", "update", "delete"] },
     { resource: "vehicles", actions: ["read", "create", "update", "delete"] },
+    { resource: "integrations", actions: ["read", "create", "update", "delete"] },
     { resource: "dashboard", actions: ["read"] },
   ],
   OPERATOR: [
@@ -35,10 +36,7 @@ export function hasPermission(
   const permissions = ROLE_PERMISSIONS[userRole];
   const resourcePermission = permissions.find(p => p.resource === resource);
   
-  const hasAccess = resourcePermission?.actions.includes(action) ?? false;
-  console.log(`Permission check: role=${userRole}, resource=${resource}, action=${action}, hasAccess=${hasAccess}`);
-  
-  return hasAccess;
+  return resourcePermission?.actions.includes(action) ?? false;
 }
 
 export function canAccessRoute(userRole: UserRole | null, route: string): boolean {
@@ -47,6 +45,7 @@ export function canAccessRoute(userRole: UserRole | null, route: string): boolea
     "/dashboard/auditoria": { resource: "audit", action: "read" },
     "/dashboard/funcionarios": { resource: "employees", action: "read" },
     "/dashboard/veiculos": { resource: "vehicles", action: "read" },
+    "/dashboard/integracao/contaazul": { resource: "integrations", action: "read" },
     "/dashboard": { resource: "dashboard", action: "read" },
   };
 

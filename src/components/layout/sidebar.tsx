@@ -18,13 +18,14 @@ import {
   Car,
   Users,
   Activity,
+  Settings,
 } from "lucide-react";
 import { PermissionGate } from "@/components/auth/permission-gate";
-import type { Session } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 import { useAuth } from "@/hooks/use-auth";
 
 interface SidebarProps {
-  session: Session;
+  user: User;
 }
 
 const menuItems = [
@@ -52,26 +53,44 @@ const menuItems = [
     href: "/dashboard/auditoria",
     permission: { resource: "audit", action: "read" }
   },
+  { 
+    icon: Settings, 
+    label: "Integrações", 
+    href: "/dashboard/integracao/contaazul",
+    permission: { resource: "integrations", action: "read" }
+  },
 ];
 
-export function Sidebar({ session }: SidebarProps) {
+export function Sidebar({ user }: SidebarProps) {
   const { collapsed, setCollapsed } = useSidebar();
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
-  const { userData, signOut } = useAuth();
+  const { userData, role, signOut } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
   };
 
-  const userInitials = userData?.full_name
-    ? userData.full_name
+  const derivedName =
+    userData?.full_name ||
+    (typeof user.user_metadata?.full_name === "string"
+      ? user.user_metadata.full_name
+      : typeof user.user_metadata?.name === "string"
+        ? user.user_metadata.name
+        : null);
+
+  const derivedEmail = userData?.email || user.email || "";
+
+  const fallbackInitialsSource = derivedName || derivedEmail;
+  const userInitials = fallbackInitialsSource
+    ? fallbackInitialsSource
         .split(" ")
-        .map((name) => name[0])
+        .filter(Boolean)
+        .map((segment) => segment[0])
         .join("")
         .toUpperCase()
         .slice(0, 2)
-    : userData?.email?.slice(0, 2).toUpperCase() || "U";
+    : "U";
 
   return (
     <aside
@@ -107,7 +126,16 @@ export function Sidebar({ session }: SidebarProps) {
         <div className="px-4 py-3">
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={userData?.picture_url || session.user.user_metadata?.avatar_url} />
+              <AvatarImage
+                src={
+                  userData?.picture_url ||
+                  (typeof user.user_metadata?.avatar_url === "string"
+                    ? user.user_metadata.avatar_url
+                    : typeof user.user_metadata?.picture === "string"
+                      ? user.user_metadata.picture
+                      : undefined)
+                }
+              />
               <AvatarFallback className="bg-teal-600 text-white">
                 {userInitials}
               </AvatarFallback>
@@ -115,11 +143,16 @@ export function Sidebar({ session }: SidebarProps) {
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {userData?.full_name || session.user.user_metadata?.full_name || "Usuário"}
+                  {derivedName || "Usuário"}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {userData?.email || session.user.email}
+                  {derivedEmail}
                 </p>
+                {role && (
+                  <p className="text-xs font-semibold text-teal-600 dark:text-teal-400 truncate">
+                    {role}
+                  </p>
+                )}
               </div>
             )}
           </div>
