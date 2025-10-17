@@ -45,13 +45,6 @@ interface AuthContextValue {
   isAuthenticated: boolean;
 }
 
-const initialState: AuthState = {
-  user: null,
-  userData: null,
-  role: null,
-  loading: true,
-};
-
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 async function fetchUserProfile(user: User): Promise<UserProfile | null> {

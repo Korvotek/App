@@ -6,7 +6,6 @@ import { ThemeProvider } from "@/providers/theme-provider";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/hooks/use-auth";
 import { createServerClient } from "@/lib/supabase/server";
-import type { Database } from "@/lib/supabase/database.types";
 import type { UserRole } from "@/lib/auth/permissions";
 
 export const dynamic = "force-dynamic";

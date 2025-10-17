@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/supabase/database.types";
+import type { Database, Json } from "@/lib/supabase/database.types";
 import { CONTA_AZUL_PROVIDER } from "./conta-azul";
 
 export type IntegrationTokenRow =
@@ -87,7 +87,7 @@ export async function upsertTenantIntegrationToken({
         token_type: token.tokenType,
         scope: token.scope,
         expires_at: token.expiresAt,
-        metadata,
+        metadata: metadata as Json,
       })
       .eq("id", existing.id);
 
@@ -108,7 +108,7 @@ export async function upsertTenantIntegrationToken({
       token_type: token.tokenType,
       scope: token.scope,
       expires_at: token.expiresAt,
-      metadata,
+      metadata: metadata as Json,
     })
     .select("id")
     .single();

@@ -1,5 +1,3 @@
-import { headers } from "next/headers";
-
 const LOG_PREFIX = "[integrations/conta-azul]";
 
 export const CONTA_AZUL_PROVIDER = "conta_azul";
@@ -126,9 +124,7 @@ export async function exchangeCodeForTokens(params: {
       Authorization: `Basic ${authHeader}`,
       "Content-Type": "application/x-www-form-urlencoded",
       Accept: "application/json",
-      "User-Agent":
-        headers().get("user-agent") ??
-        "Sigelo/ContaAzulIntegration (+https://sigelo.app)",
+      "User-Agent": "Sigelo/ContaAzulIntegration (+https://sigelo.app)",
     },
     body,
     cache: "no-store",
@@ -193,9 +189,7 @@ export async function revokeContaAzulToken(params: {
         Authorization: `Basic ${authHeader}`,
         "Content-Type": "application/x-www-form-urlencoded",
         Accept: "application/json",
-        "User-Agent":
-          headers().get("user-agent") ??
-          "Sigelo/ContaAzulIntegration (+https://sigelo.app)",
+        "User-Agent": "Sigelo/ContaAzulIntegration (+https://sigelo.app)",
       },
       body: new URLSearchParams({
         token: params.token,
@@ -225,9 +219,7 @@ export async function fetchContaAzulAccountSummary(accessToken: string) {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         Accept: "application/json",
-        "User-Agent":
-          headers().get("user-agent") ??
-          "Sigelo/ContaAzulIntegration (+https://sigelo.app)",
+        "User-Agent": "Sigelo/ContaAzulIntegration (+https://sigelo.app)",
       },
       cache: "no-store",
     });
