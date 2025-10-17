@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -13,7 +12,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PermissionGate } from "@/components/auth/permission-gate";
-import { Eye, RefreshCw, Search } from "lucide-react";
+import { Eye, RefreshCw } from "lucide-react";
+import {
+  listContaAzulServices,
+  syncContaAzulServices,
+} from "@/actions/conta-azul-services";
 
 interface Service {
   id: string;
@@ -36,112 +39,118 @@ interface Service {
   updated_at: string;
 }
 
-interface ServicesResponse {
-  services: Service[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
 export function ServicesList() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isSyncing, startSync] = useTransition();
+
   const limit = 10;
 
-  const fetchServices = async (page = 1, search = "") => {
-    try {
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadServices = async () => {
       setLoading(true);
+      try {
+        const data = await listContaAzulServices({
+          page: currentPage,
+          limit,
+          search: searchTerm.trim(),
+        });
 
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-        ...(search ? { search } : {}),
-      });
-
-      const response = await fetch(`/api/services?${params.toString()}`);
-      if (!response.ok) {
-        throw new Error("Erro ao carregar serviços");
+        if (!isMounted) return;
+        setServices(data.services as Service[]);
+        setTotalCount(data.totalCount);
+        setTotalPages(data.totalPages);
+      } catch (error) {
+        if (isMounted) {
+          console.error("Erro ao carregar serviços:", error);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
+    };
 
-      const data: ServicesResponse = await response.json();
-      setServices(data.services);
-      setCurrentPage(data.page);
-      setTotal(data.total);
-      setTotalPages(data.totalPages);
-    } catch (error) {
-      console.error("Erro ao carregar serviços:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    loadServices();
 
-  const handleSearch = (value: string) => {
+    return () => {
+      isMounted = false;
+    };
+  }, [currentPage, searchTerm]);
+
+  const handleSearchChange = (value: string) => {
     setSearchTerm(value);
     setCurrentPage(1);
-    fetchServices(1, value);
   };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    fetchServices(page, searchTerm);
   };
 
-  const handleSyncServices = async () => {
-    try {
-      const response = await fetch("/api/services/sync", {
-        method: "POST",
-      });
+  const refreshTable = async (page: number, search: string) => {
+    const data = await listContaAzulServices({
+      page,
+      limit,
+      search: search.trim(),
+    });
+    setServices(data.services as Service[]);
+    setTotalCount(data.totalCount);
+    setTotalPages(data.totalPages);
+    setCurrentPage(data.currentPage);
+  };
 
-      if (!response.ok) {
-        throw new Error("Erro ao sincronizar serviços");
+  const handleSyncServices = () => {
+    startSync(async () => {
+      try {
+        await syncContaAzulServices();
+        await refreshTable(currentPage, searchTerm);
+      } catch (error) {
+        console.error("Erro ao sincronizar serviços:", error);
       }
-
-      await fetchServices(currentPage, searchTerm);
-    } catch (error) {
-      console.error("Erro ao sincronizar serviços:", error);
-    }
+    });
   };
-
-  useEffect(() => {
-    fetchServices();
-  }, []);
 
   if (loading) {
     return <div className="py-8 text-center">Carregando serviços...</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="w-full space-y-4">
+      <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Serviços</h2>
-          <p className="text-muted-foreground">
-            Consulte e mantenha os serviços sincronizados com o Conta Azul.
+          <h1 className="text-2xl font-bold">Serviços</h1>
+          <p className="text-muted-foreground text-sm">
+            Consulte e mantenha os serviços sincronizados com o Conta Azul
           </p>
         </div>
-
         <PermissionGate resource="services" action="sync">
           <Button onClick={handleSyncServices} variant="outline">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Sincronizar
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`}
+            />
+            {isSyncing ? "Sincronizando..." : "Sincronizar"}
           </Button>
         </PermissionGate>
       </div>
 
-      <div className="flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-          <Input
-            placeholder="Buscar por descrição, código ou ID externo..."
+      <div className="flex items-center gap-4">
+        <div className="flex-1 max-w-md">
+          <input
+            type="text"
+            placeholder="Buscar serviços..."
             value={searchTerm}
-            onChange={(event) => handleSearch(event.target.value)}
-            className="pl-10"
+            onChange={(event) => handleSearchChange(event.target.value)}
+            className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           />
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {totalCount} serviços total
         </div>
       </div>
 
@@ -227,18 +236,18 @@ export function ServicesList() {
               variant="outline"
               size="sm"
               onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
+              disabled={currentPage === 1 || isSyncing}
             >
               Anterior
             </Button>
             <span className="text-sm text-muted-foreground">
-              Página {currentPage} de {totalPages} ({total} serviços)
+              Página {currentPage} de {totalPages} ({totalCount} serviços)
             </span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === totalPages || isSyncing}
             >
               Próxima
             </Button>

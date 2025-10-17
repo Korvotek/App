@@ -124,6 +124,7 @@ export interface FetchAllServicesOptions {
   search?: string;
   maxPages?: number;
   signal?: AbortSignal;
+  serviceTypeFilter?: string | string[];
 }
 
 export async function fetchAllContaAzulServices(
@@ -148,7 +149,27 @@ export async function fetchAllContaAzulServices(
       },
     );
 
-    items.push(...pageItems);
+    const filteredItems =
+      options.serviceTypeFilter === undefined
+        ? pageItems
+        : pageItems.filter((service) => {
+            const value =
+              typeof service.tipo_servico === "string"
+                ? service.tipo_servico.toUpperCase()
+                : null;
+
+            if (!value) return false;
+
+            if (Array.isArray(options.serviceTypeFilter)) {
+              return options.serviceTypeFilter
+                .map((entry) => entry.toUpperCase())
+                .includes(value);
+            }
+
+            return value === options.serviceTypeFilter?.toUpperCase();
+          });
+
+    items.push(...filteredItems);
 
     totalPages = pagination.totalPages ?? totalPages;
 
@@ -171,4 +192,3 @@ export async function fetchAllContaAzulServices(
 
   return items;
 }
-

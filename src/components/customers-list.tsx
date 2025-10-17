@@ -3,10 +3,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PermissionGate } from "@/components/auth/permission-gate";
-import { Eye, RefreshCw, Search } from "lucide-react";
+import { Eye, RefreshCw } from "lucide-react";
 
 interface Customer {
   id: string;
@@ -106,34 +105,34 @@ export function CustomersList() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header com botões */}
-      <div className="flex items-center justify-between">
+    <div className="w-full space-y-4">
+      <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Clientes</h2>
-          <p className="text-muted-foreground">
-            Gerencie os clientes do sistema e sincronize com integrações externas.
+          <h1 className="text-2xl font-bold">Clientes</h1>
+          <p className="text-muted-foreground text-sm">
+            Gerencie os clientes do sistema e sincronize com integrações externas
           </p>
         </div>
-        
         <PermissionGate resource="customers" action="sync">
           <Button onClick={handleSyncCustomers} variant="outline">
-            <RefreshCw className="mr-2 h-4 w-4" />
+            <RefreshCw className="h-4 w-4 mr-2" />
             Sincronizar
           </Button>
         </PermissionGate>
       </div>
 
-      {/* Busca */}
-      <div className="flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Buscar por nome, email ou documento..."
+      <div className="flex items-center gap-4">
+        <div className="flex-1 max-w-md">
+          <input
+            type="text"
+            placeholder="Buscar clientes..."
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
-            className="pl-10"
+            className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           />
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {total} clientes total
         </div>
       </div>
 
