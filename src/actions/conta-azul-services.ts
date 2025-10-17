@@ -51,6 +51,7 @@ export async function syncContaAzulServices(): Promise<SyncContaAzulServicesResu
     const services = await fetchAllContaAzulServices(tokenRow.access_token, {
       pageSize: 100,
       maxPages: 100,
+      serviceTypeFilter: "PRESTADO",
     });
 
     logDebug("Fetched Conta Azul services", {
@@ -243,4 +244,3 @@ export async function listContaAzulServices(
     limit,
   };
 }
-
