@@ -121,7 +121,6 @@ export async function syncContaAzulCustomers(): Promise<SyncContaAzulCustomersRe
           .upsert(chunk, {
             onConflict: "tenant_id,external_id",
             ignoreDuplicates: false,
-            returning: "minimal",
           });
 
         if (error) {
