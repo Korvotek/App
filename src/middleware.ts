@@ -1,30 +1,46 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createMiddlewareSupabaseClient } from "@/lib/supabase/middleware-client";
 
 export async function middleware(request: NextRequest) {
-  const { supabase, response } = createMiddlewareSupabaseClient(request);
+  // Middleware simplificado para evitar erros no Vercel
+  const pathname = request.nextUrl.pathname;
 
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  // Permitir acesso a arquivos estáticos e APIs
+  if (
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/api/") ||
+    pathname.includes(".") ||
+    pathname === "/favicon.ico"
+  ) {
+    return NextResponse.next();
+  }
 
-  if (request.nextUrl.pathname.startsWith("/dashboard")) {
-    if (error || !user) {
+  // Para rotas protegidas, redirecionar para login se não autenticado
+  if (pathname.startsWith("/dashboard")) {
+    // Verificar se há token de sessão nos cookies
+    const sessionCookie = request.cookies.get("sb-access-token") || 
+                         request.cookies.get("supabase-auth-token");
+    
+    if (!sessionCookie) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/login";
-      redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname);
+      redirectUrl.searchParams.set("redirectedFrom", pathname);
       return NextResponse.redirect(redirectUrl);
     }
   }
 
-  if (request.nextUrl.pathname.startsWith("/login") && user && !error) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/dashboard";
-    return NextResponse.redirect(redirectUrl);
+  // Se já está logado e tenta acessar login, redirecionar para dashboard
+  if (pathname.startsWith("/login")) {
+    const sessionCookie = request.cookies.get("sb-access-token") || 
+                         request.cookies.get("supabase-auth-token");
+    
+    if (sessionCookie) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/dashboard";
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
