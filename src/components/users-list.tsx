@@ -12,6 +12,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -37,7 +45,8 @@ import {
   UserX,
   Calendar,
   Clock,
-  Mail
+  Mail,
+  Users
 } from "lucide-react";
 
 type User = {
@@ -155,7 +164,9 @@ export function UsersList() {
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Carregando usuários...</p>
+          <p className="mt-2 text-muted-foreground">
+            Carregando usuários...
+          </p>
         </div>
       </div>
     );
@@ -191,178 +202,216 @@ export function UsersList() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <div className="text-center">
-              <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">
-                {searchTerm ? "Nenhum usuário encontrado" : "Nenhum usuário cadastrado"}
+                {searchTerm
+                  ? "Nenhum usuário encontrado"
+                  : "Nenhum usuário cadastrado"}
               </h3>
               <p className="text-muted-foreground mb-4">
-                {searchTerm 
+                {searchTerm
                   ? "Tente ajustar os termos de busca"
-                  : "Não há usuários ativos no sistema"
-                }
+                  : "Usuários são criados automaticamente no login"}
               </p>
             </div>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredUsers.map((user) => (
-            <Card key={user.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      {user.picture_url ? (
-                        <Image 
-                          src={user.picture_url} 
-                          alt={user.full_name || user.email}
-                          width={40}
-                          height={40}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <UserCheck className="h-5 w-5 text-primary" />
-                      )}
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">
-                        {user.full_name || "Usuário"}
-                      </CardTitle>
-                      <CardDescription className="flex items-center gap-1">
-                        <Mail className="h-3 w-3" />
+        <Card>
+          <CardHeader>
+            <CardTitle>Lista de Usuários</CardTitle>
+            <CardDescription>
+              {filteredUsers.length} de {totalCount} usuários
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Usuário</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Último Login</TableHead>
+                  <TableHead>Última Atividade</TableHead>
+                  <TableHead className="w-[100px]">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="relative h-8 w-8">
+                          {user.picture_url ? (
+                            <Image
+                              src={user.picture_url}
+                              alt={user.full_name || user.email}
+                              width={32}
+                              height={32}
+                              className="rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <UserCheck className="h-4 w-4 text-primary" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-medium">
+                            {user.full_name || "Nome não informado"}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            ID: {user.id.slice(0, 8)}...
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
                         {user.email}
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <PermissionGate resource="users" action="update">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleRoleChange(user.id, "ADMIN")}>
-                          <Shield className="h-4 w-4 mr-2" />
-                          Tornar Administrador
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleRoleChange(user.id, "OPERATOR")}>
-                          <UserCheck className="h-4 w-4 mr-2" />
-                          Tornar Operador
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleRoleChange(user.id, "VIEWER")}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          Tornar Visualizador
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleDeactivateUser(user.id)}
-                          className="text-red-600"
-                        >
-                          <UserX className="h-4 w-4 mr-2" />
-                          Desativar Usuário
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </PermissionGate>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Badge variant={getRoleBadgeVariant(user.role)}>
-                    {getRoleLabel(user.role)}
-                  </Badge>
-                  <Badge variant={user.active ? "default" : "secondary"}>
-                    {user.active ? "Ativo" : "Inativo"}
-                  </Badge>
-                </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getRoleBadgeVariant(user.role)}>
+                        <Shield className="h-3 w-3 mr-1" />
+                        {getRoleLabel(user.role)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.active ? "default" : "secondary"}>
+                        {user.active ? "Ativo" : "Inativo"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        {formatDate(user.last_login_at)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        {formatDate(user.last_activity_at)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <PermissionGate resource="users" action="update">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleRoleChange(user.id, "ADMIN")}
+                              disabled={user.role === "ADMIN"}
+                            >
+                              <Shield className="h-4 w-4 mr-2" />
+                              Tornar Admin
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleRoleChange(user.id, "OPERATOR")}
+                              disabled={user.role === "OPERATOR"}
+                            >
+                              <UserCheck className="h-4 w-4 mr-2" />
+                              Tornar Operador
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleRoleChange(user.id, "VIEWER")}
+                              disabled={user.role === "VIEWER"}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Tornar Visualizador
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeactivateUser(user.id)}
+                              className="text-destructive"
+                              disabled={!user.active}
+                            >
+                              <UserX className="h-4 w-4 mr-2" />
+                              Desativar Usuário
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </PermissionGate>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
 
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">Cadastrado:</span>
-                    <span>{formatDate(user.created_at)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">Último login:</span>
-                    <span>{formatDate(user.last_login_at)}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+            {totalPages > 1 && (
+              <div className="mt-6">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage > 1) {
+                            setCurrentPage(currentPage - 1);
+                          }
+                        }}
+                        className={currentPage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
 
-      {totalPages > 1 && (
-        <div className="flex justify-center mt-8">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious 
-                  href="#"
-                  size="default"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage > 1) {
-                      setCurrentPage(currentPage - 1);
-                    }
-                  }}
-                  className={currentPage <= 1 ? 'pointer-events-none opacity-50' : ''}
-                />
-              </PaginationItem>
-              
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNumber;
-                if (totalPages <= 5) {
-                  pageNumber = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNumber = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNumber = totalPages - 4 + i;
-                } else {
-                  pageNumber = currentPage - 2 + i;
-                }
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                      if (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      ) {
+                        return (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setCurrentPage(page);
+                              }}
+                              isActive={currentPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      } else if (
+                        page === currentPage - 2 ||
+                        page === currentPage + 2
+                      ) {
+                        return (
+                          <PaginationItem key={page}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        );
+                      }
+                      return null;
+                    })}
 
-                return (
-                  <PaginationItem key={pageNumber}>
-                    <PaginationLink
-                      href="#"
-                      size="icon"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setCurrentPage(pageNumber);
-                      }}
-                      isActive={currentPage === pageNumber}
-                    >
-                      {pageNumber}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-              })}
-
-              {totalPages > 5 && currentPage < totalPages - 2 && (
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )}
-
-              <PaginationItem>
-                <PaginationNext 
-                  href="#"
-                  size="default"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage < totalPages) {
-                      setCurrentPage(currentPage + 1);
-                    }
-                  }}
-                  className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : ''}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage < totalPages) {
+                            setCurrentPage(currentPage + 1);
+                          }
+                        }}
+                        className={currentPage >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

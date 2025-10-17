@@ -32,6 +32,7 @@ export function createMiddlewareSupabaseClient(request: NextRequest) {
             name,
             value,
             ...options,
+            httpOnly: false,
           });
         },
         remove(name: string, options: CookieOptions) {

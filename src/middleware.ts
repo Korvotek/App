@@ -5,11 +5,12 @@ export async function middleware(request: NextRequest) {
   const { supabase, response } = createMiddlewareSupabaseClient(request);
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
   if (request.nextUrl.pathname.startsWith("/dashboard")) {
-    if (!session) {
+    if (error || !user) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/login";
       redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname);
@@ -17,7 +18,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (request.nextUrl.pathname.startsWith("/login") && session) {
+  if (request.nextUrl.pathname.startsWith("/login") && user && !error) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/dashboard";
     return NextResponse.redirect(redirectUrl);

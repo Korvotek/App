@@ -40,7 +40,7 @@ export async function registerVehicle(formData: VehicleRegistrationData) {
     await supabase.from("activity_logs").insert({
       tenant_id: tenantId,
       user_id: user.id,
-      action_type: "CREATE_EMPLOYEE",
+      action_type: "ASSIGN_VEHICLE",
       entity_id: vehicle.id,
       entity_type: "vehicle",
       success: true,

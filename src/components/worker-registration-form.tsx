@@ -73,7 +73,6 @@ export function WorkerRegistrationForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Informações Básicas */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Informações Básicas</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -178,7 +177,6 @@ export function WorkerRegistrationForm() {
             </div>
           </div>
 
-          {/* Botões */}
           <div className="flex justify-end gap-4 pt-6">
             <Button type="button" variant="outline" onClick={handleCancel}>
               Cancelar

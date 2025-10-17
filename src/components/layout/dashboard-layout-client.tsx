@@ -3,29 +3,28 @@
 import { Sidebar } from "./sidebar";
 import { useSidebar } from "@/providers/sidebar-provider";
 import { DashboardBreadcrumb } from "@/components/dashboard-breadcrumb";
-import type { Session } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 
 interface DashboardLayoutClientProps {
   children: React.ReactNode;
-  session: Session;
+  user: User;
 }
 
 export function DashboardLayoutClient({
   children,
-  session,
+  user,
 }: DashboardLayoutClientProps) {
   const { collapsed } = useSidebar();
 
   return (
     <>
-      <Sidebar session={session} />
+      <Sidebar user={user} />
       <div
         className={`
           transition-all duration-300 min-h-screen
           ${collapsed ? "ml-20" : "ml-64"}
         `}
       >
-        {/* Breadcrumb */}
         <div className="px-8 py-3 border-b border-border bg-muted/30">
           <DashboardBreadcrumb />
         </div>

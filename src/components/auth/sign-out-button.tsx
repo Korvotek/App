@@ -17,17 +17,13 @@ export function SignOutButton({ className, children }: SignOutButtonProps) {
   const handleSignOut = async () => {
     try {
       setIsLoading(true);
-      const { error } = await auth.signOut();
-
-      if (error) {
-        toast.error("Erro ao fazer logout. Tente novamente.");
-      } else {
-        toast.success("Logout realizado com sucesso!");
-        router.push("/");
-        router.refresh();
-      }
-    } catch {
-      toast.error("Erro inesperado. Tente novamente.");
+      await auth.signOut();
+      toast.success("Logout realizado com sucesso!");
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Erro ao fazer logout. Tente novamente.");
     } finally {
       setIsLoading(false);
     }

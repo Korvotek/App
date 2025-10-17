@@ -16,18 +16,24 @@ interface RoleGateProps {
   fallback?: React.ReactNode;
 }
 
-export function PermissionGate({ 
-  children, 
-  resource, 
-  action, 
-  fallback = null 
+export function PermissionGate({
+  children,
+  resource,
+  action,
+  fallback = null,
 }: PermissionGateProps) {
-  const { role } = useAuth();
-  
-  if (!hasPermission(role, resource, action)) {
+  const { role, loading } = useAuth();
+
+  if (loading && !role) {
     return <>{fallback}</>;
   }
-  
+
+  const allowed = hasPermission(role, resource, action);
+
+  if (!allowed) {
+    return <>{fallback}</>;
+  }
+
   return <>{children}</>;
 }
 
@@ -36,9 +42,9 @@ export function RoleGate({
   requiredRole, 
   fallback = null 
 }: RoleGateProps) {
-  const { role } = useAuth();
-  
-  if (!role) {
+  const { role, loading } = useAuth();
+
+  if ((loading && !role) || !role) {
     return <>{fallback}</>;
   }
 

@@ -34,7 +34,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4">
       <div className="w-full max-w-5xl h-[75vh] bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden flex">
-        {/* Left Panel - Branding */}
         <div
           className="hidden lg:flex lg:w-1/2 p-12 flex-col justify-center text-white"
           style={{
@@ -50,7 +49,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Right Panel - Login Form */}
         <div className="w-full lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center">
           <div className="max-w-md mx-auto w-full">
             <div className="mb-8">
@@ -62,7 +60,6 @@ export default function LoginPage() {
               </p>
             </div>
 
-            {/* Google Sign In Button */}
             <GoogleSignInButton className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-medium py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-700 transition-colors duration-200 flex items-center justify-center gap-3 shadow-sm">
               <svg
                 className="w-5 h-5"
@@ -89,7 +86,6 @@ export default function LoginPage() {
               Continuar com Google
             </GoogleSignInButton>
 
-            {/* Terms and Privacy */}
             <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800">
               <p className="text-xs text-center text-gray-500 dark:text-gray-400">
                 Ao continuar, você concorda com nossos{" "}
@@ -112,7 +108,6 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Auth Status Badge */}
       <AuthStatus />
     </div>
   );

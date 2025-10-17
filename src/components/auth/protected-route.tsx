@@ -49,7 +49,7 @@ export function ProtectedRoute({
     }
   }, [user, role, loading, pathname, requiredRole, requiredPermission, checkPermission, requireRole, router]);
 
-  if (loading) {
+  if (loading && !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

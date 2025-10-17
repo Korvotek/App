@@ -17,7 +17,27 @@ export const auth = {
   },
 
   signOut: async () => {
-    return await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Error signing out on client:", error);
+    }
+
+    try {
+      const response = await fetch("/auth/signout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const { message } = await response.json();
+        console.error("Failed to clear server session:", message);
+      }
+    } catch (error) {
+      console.error("Error calling server signout route:", error);
+    }
   },
 
   getUser: async () => {

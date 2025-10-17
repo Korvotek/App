@@ -18,7 +18,6 @@ describe("vehicleRegistrationSchema - Integração com Supabase", () => {
       expect(result.success).toBe(true);
 
       if (result.success) {
-        // Verifica se os dados validados podem ser atribuídos ao tipo do Supabase
         const supabaseData: Partial<VehicleInsert> = {
           brand: result.data.brand,
           model: result.data.model,
@@ -29,7 +28,6 @@ describe("vehicleRegistrationSchema - Integração com Supabase", () => {
           module_capacity: result.data.module_capacity,
         };
 
-        // Se chegar aqui sem erro de tipo, a compatibilidade está OK
         expect(supabaseData).toBeDefined();
       }
     });
@@ -47,7 +45,6 @@ describe("vehicleRegistrationSchema - Integração com Supabase", () => {
       expect(result.success).toBe(true);
 
       if (result.success) {
-        // Verifica se o enum é compatível com o tipo do Supabase
         const vehicleType: VehicleInsert["vehicle_type"] =
           result.data.vehicle_type || null;
         expect(["CARGA", "TANQUE", null, undefined]).toContain(vehicleType);
@@ -66,7 +63,6 @@ describe("vehicleRegistrationSchema - Integração com Supabase", () => {
       expect(result.success).toBe(true);
 
       if (result.success) {
-        // Campos opcionais devem ser compatíveis com null/undefined do Supabase
         const supabaseData: Partial<VehicleInsert> = {
           brand: result.data.brand,
           model: result.data.model,
@@ -77,7 +73,6 @@ describe("vehicleRegistrationSchema - Integração com Supabase", () => {
           module_capacity: result.data.module_capacity ?? null,
         };
 
-        // Campos opcionais do Zod ficam undefined, mas podem ser null no Supabase
         expect([undefined, null]).toContain(supabaseData.vehicle_type);
         expect([undefined, null]).toContain(supabaseData.fuel_type);
         expect([undefined, null]).toContain(supabaseData.module_capacity);
@@ -85,117 +80,109 @@ describe("vehicleRegistrationSchema - Integração com Supabase", () => {
     });
   });
 
-  describe("⚠️ Validações que o Zod NÃO cobre (mas o Supabase pode ter)", () => {
-    it("AVISO: Placa duplicada - Zod aceita, mas Supabase pode rejeitar (UNIQUE constraint)", () => {
+  describe("Validations NOT covered by Zod (but Supabase may have)", () => {
+    it("WARNING: Duplicate plate - Zod accepts, but Supabase may reject (UNIQUE constraint)", () => {
       const vehicle1 = {
         brand: "Ford",
         model: "Cargo",
-        license_plate: "ABC-1234", // Mesma placa
+        license_plate: "ABC-1234",
         year: 2023,
       };
 
       const vehicle2 = {
         brand: "Volvo",
         model: "FH",
-        license_plate: "ABC-1234", // Mesma placa
+        license_plate: "ABC-1234",
         year: 2024,
       };
 
-      // Zod aceita ambos
       expect(vehicleRegistrationSchema.safeParse(vehicle1).success).toBe(true);
       expect(vehicleRegistrationSchema.safeParse(vehicle2).success).toBe(true);
 
-      // ⚠️ MAS: O Supabase rejeitará o segundo INSERT se houver UNIQUE constraint
       console.warn(
-        "⚠️ Placas duplicadas passam no Zod, mas podem falhar no Supabase!",
+        "WARNING: Duplicate plates pass Zod validation but may fail in Supabase!",
       );
     });
 
-    it("AVISO: Formato de placa - Zod aceita qualquer string 7+, Supabase pode ter regex", () => {
+    it("WARNING: Plate format - Zod accepts any string 7+, Supabase may have regex", () => {
       const invalidFormatPlate = {
         brand: "Mercedes",
         model: "Atego",
-        license_plate: "1234567", // Sem letras, mas 7+ caracteres
+        license_plate: "1234567",
         year: 2023,
       };
 
-      // Zod aceita (apenas valida tamanho mínimo)
       const result = vehicleRegistrationSchema.safeParse(invalidFormatPlate);
       expect(result.success).toBe(true);
 
-      // ⚠️ MAS: Supabase pode ter CHECK constraint validando formato brasileiro
       console.warn(
-        "⚠️ Formato de placa inválido passa no Zod, mas pode falhar no Supabase!",
+        "WARNING: Invalid plate format passes Zod but may fail in Supabase!",
       );
     });
 
-    it("AVISO: Validações de negócio - podem existir triggers no Supabase", () => {
+    it("WARNING: Business validations - may have triggers in Supabase", () => {
       const vehicle = {
         brand: "Scania",
         model: "R450",
         license_plate: "XYZ-9999",
         year: 2023,
         vehicle_type: "TANQUE" as const,
-        module_capacity: 0, // Tanque com capacidade zero
+        module_capacity: 0,
       };
 
-      // Zod aceita
       const result = vehicleRegistrationSchema.safeParse(vehicle);
       expect(result.success).toBe(true);
 
-      // ⚠️ MAS: Pode haver trigger no Supabase que rejeita TANQUE com capacidade 0
       console.warn(
-        "⚠️ Regras de negócio podem ser validadas apenas no Supabase!",
+        "WARNING: Business rules may only be validated in Supabase!",
       );
     });
 
-    it("AVISO: Relacionamentos - Zod não valida foreign keys", () => {
+    it("WARNING: Relationships - Zod does not validate foreign keys", () => {
       const vehicle = {
         brand: "DAF",
         model: "XF",
         license_plate: "AAA-0000",
         year: 2023,
-        // Se houver tenant_id como FK, Zod não valida se existe
       };
 
       const result = vehicleRegistrationSchema.safeParse(vehicle);
       expect(result.success).toBe(true);
 
-      // ⚠️ MAS: Supabase pode rejeitar se tenant_id não existir na tabela tenants
       console.warn(
-        "⚠️ Foreign keys não são validadas pelo Zod, apenas pelo Supabase!",
+        "WARNING: Foreign keys are not validated by Zod, only by Supabase!",
       );
     });
   });
 
-  describe("📋 Checklist de validação completa", () => {
-    it("deve documentar o que PRECISA ser testado no Supabase", () => {
+  describe("Complete validation checklist", () => {
+    it("should document what NEEDS to be tested in Supabase", () => {
       const checklist = {
-        zodValidation: true, // ✅ Testado aqui
-        supabaseConstraints: false, // ❌ Precisa testar com dados reais
-        uniqueConstraints: false, // ❌ Precisa testar duplicação
-        foreignKeys: false, // ❌ Precisa testar relacionamentos
-        checkConstraints: false, // ❌ Precisa testar regras de CHECK
-        triggers: false, // ❌ Precisa testar triggers
-        rowLevelSecurity: false, // ❌ Precisa testar RLS policies
+        zodValidation: true,
+        supabaseConstraints: false,
+        uniqueConstraints: false,
+        foreignKeys: false,
+        checkConstraints: false,
+        triggers: false,
+        rowLevelSecurity: false,
       };
 
-      console.log("📋 Checklist de Validação Completa:");
-      console.log("✅ Validação Zod (frontend): COBERTA por testes");
-      console.log("⚠️ Constraints do Supabase: PRECISA testar com INSERT real");
+      console.log("Complete Validation Checklist:");
+      console.log("✅ Zod validation (frontend): COVERED by tests");
+      console.log("⚠️ Supabase constraints: NEEDS testing with real INSERT");
       console.log(
-        "⚠️ Unique constraints: PRECISA testar tentando duplicar placas",
+        "⚠️ Unique constraints: NEEDS testing duplicate plates",
       );
       console.log(
-        "⚠️ Foreign keys: PRECISA testar com IDs inválidos de tenant",
+        "⚠️ Foreign keys: NEEDS testing with invalid tenant IDs",
       );
       console.log(
-        "⚠️ CHECK constraints: PRECISA verificar regras do banco",
+        "⚠️ CHECK constraints: NEEDS to verify database rules",
       );
       console.log(
-        "⚠️ Triggers: PRECISA verificar se há lógica no banco",
+        "⚠️ Triggers: NEEDS to verify if there is logic in database",
       );
-      console.log("⚠️ RLS: PRECISA testar permissões por usuário");
+      console.log("⚠️ RLS: NEEDS to test permissions per user");
 
       expect(checklist.zodValidation).toBe(true);
     });

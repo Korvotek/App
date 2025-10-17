@@ -3,7 +3,7 @@ import { ProtectedRoute } from '@/components/auth/protected-route';
 
 export default function WorkerRegistrationPage() {
   return (
-    <ProtectedRoute requiredRole="OPERATOR">
+    <ProtectedRoute requiredPermission={{ resource: "employees", action: "create" }}>
       <div className="w-full space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Cadastro de Funcionário</h1>

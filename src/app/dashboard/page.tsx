@@ -23,10 +23,11 @@ import {
 export default async function DashboardPage() {
   const supabase = await createServerClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (error || !user) {
     redirect("/login");
   }
 
@@ -104,7 +105,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">
           Bem-vindo ao Sigelo! 👋
@@ -114,7 +114,6 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => (
           <Card key={stat.title}>
@@ -135,7 +134,6 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Quick Actions */}
       <div>
         <h2 className="text-2xl font-bold text-foreground mb-4">
           Ações Rápidas
@@ -167,7 +165,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Recent Activity */}
       <div>
         <h2 className="text-2xl font-bold text-foreground mb-4">
           Atividade Recente

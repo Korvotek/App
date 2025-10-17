@@ -3,7 +3,7 @@ import { ProtectedRoute } from '@/components/auth/protected-route';
 
 export default function VehiclesPage() {
   return (
-    <ProtectedRoute requiredRole="OPERATOR">
+    <ProtectedRoute requiredPermission={{ resource: "vehicles", action: "read" }}>
       <VehiclesList />
     </ProtectedRoute>
   );

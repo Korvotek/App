@@ -3,7 +3,7 @@ import { ProtectedRoute } from '@/components/auth/protected-route';
 
 export default function WorkersPage() {
   return (
-    <ProtectedRoute requiredRole="OPERATOR">
+    <ProtectedRoute requiredPermission={{ resource: "employees", action: "read" }}>
       <WorkersList />
     </ProtectedRoute>
   );

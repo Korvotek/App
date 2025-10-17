@@ -14,7 +14,7 @@ export async function getUsers(page: number = 1, limit: number = 12) {
 
   const { count: totalCount, error: countError } = await supabase
     .from("users")
-    .select("*", { count: "exact", head: true })
+    .select("id", { count: "exact", head: true })
     .eq("tenant_id", tenantId)
     .eq("active", true);
 

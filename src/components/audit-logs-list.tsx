@@ -9,6 +9,14 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -26,18 +34,16 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
-import { getActivityLogs, getActivityStats } from "@/actions/audit-actions";
+import { getActivityLogs, getUsersForFilter } from "@/actions/audit-actions";
 import { toast } from "sonner";
 import { 
   Activity,
   CheckCircle,
-  XCircle,
   User,
-  Clock,
   Filter,
-  BarChart3,
-  TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  Eye,
+  Calendar
 } from "lucide-react";
 
 import type { Database } from "@/lib/supabase/database.types";
@@ -60,12 +66,10 @@ type ActivityLog = {
   } | null;
 };
 
-type ActivityStats = {
-  totalActions: number;
-  successfulActions: number;
-  failedActions: number;
-  successRate: number;
-  actionTypes: Record<string, number>;
+type User = {
+  id: string;
+  email: string;
+  full_name: string | null;
 };
 
 const actionTypeLabels: Record<string, string> = {
@@ -94,7 +98,7 @@ const actionTypeLabels: Record<string, string> = {
 
 export function AuditLogsList() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
-  const [stats, setStats] = useState<ActivityStats | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -103,25 +107,35 @@ export function AuditLogsList() {
     actionType: "all",
     dateFrom: "",
     dateTo: "",
+    userId: "all",
   });
   const limit = 20;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [logsData, statsData] = await Promise.all([
-          getActivityLogs(currentPage, limit, filters.actionType, filters.dateFrom, filters.dateTo),
-          getActivityStats()
-        ]);
+        setLoading(true);
         
+        const [logsData, usersData] = await Promise.all([
+          getActivityLogs(
+            currentPage,
+            limit,
+            filters.actionType !== "all" ? filters.actionType : undefined,
+            filters.dateFrom || undefined,
+            filters.dateTo || undefined,
+            filters.userId !== "all" ? filters.userId : undefined
+          ),
+          getUsersForFilter(),
+        ]);
+
         if (logsData) {
           setLogs(logsData.logs);
           setTotalPages(logsData.totalPages);
           setTotalCount(logsData.totalCount);
         }
-        
-        if (statsData) {
-          setStats(statsData);
+
+        if (usersData) {
+          setUsers(usersData);
         }
       } catch (error) {
         console.error("Erro ao buscar logs de auditoria:", error);
@@ -144,19 +158,19 @@ export function AuditLogsList() {
       actionType: "all",
       dateFrom: "",
       dateTo: "",
+      userId: "all",
     });
     setCurrentPage(1);
   };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleString("pt-BR", {
+    return new Date(dateString).toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-      second: "2-digit",
     });
   };
 
@@ -164,39 +178,40 @@ export function AuditLogsList() {
     switch (actionType) {
       case "LOGIN":
       case "LOGOUT":
-        return <User className="h-4 w-4" />;
-      case "CREATE_EVENT":
-      case "CREATE_CLIENT":
+        return <User className="h-4 w-4 text-blue-600" />;
       case "CREATE_EMPLOYEE":
-      case "CREATE_USER":
-        return <CheckCircle className="h-4 w-4" />;
-      case "DELETE_EVENT":
-      case "DELETE_CLIENT":
+      case "UPDATE_EMPLOYEE":
       case "DELETE_EMPLOYEE":
+        return <User className="h-4 w-4 text-green-600" />;
+      case "CREATE_USER":
+      case "UPDATE_USER":
       case "DELETE_USER":
-        return <XCircle className="h-4 w-4" />;
+        return <User className="h-4 w-4 text-purple-600" />;
       default:
-        return <Activity className="h-4 w-4" />;
+        return <Activity className="h-4 w-4 text-gray-600" />;
     }
   };
 
   const getActionColor = (actionType: string, success: boolean | null) => {
-    if (success === false) return "destructive";
+    if (success === false) {
+      return "destructive";
+    }
     
     switch (actionType) {
       case "LOGIN":
-        return "default";
       case "LOGOUT":
-        return "secondary";
-      case "CREATE_EVENT":
-      case "CREATE_CLIENT":
+        return "default";
       case "CREATE_EMPLOYEE":
       case "CREATE_USER":
+      case "CREATE_MOLIDE_OPERATION":
         return "default";
-      case "DELETE_EVENT":
-      case "DELETE_CLIENT":
+      case "UPDATE_EMPLOYEE":
+      case "UPDATE_USER":
+      case "UPDATE_MOLIDE_OPERATION":
+        return "secondary";
       case "DELETE_EMPLOYEE":
       case "DELETE_USER":
+      case "DELETE_MOLIDE_OPERATION":
         return "destructive";
       default:
         return "outline";
@@ -225,55 +240,6 @@ export function AuditLogsList() {
         </div>
       </div>
 
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Ações</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalActions}</div>
-              <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Sucessos</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.successfulActions}</div>
-              <p className="text-xs text-muted-foreground">Ações bem-sucedidas</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Falhas</CardTitle>
-              <XCircle className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.failedActions}</div>
-              <p className="text-xs text-muted-foreground">Ações com erro</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Taxa de Sucesso</CardTitle>
-              <TrendingUp className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {stats.successRate.toFixed(1)}%
-              </div>
-              <p className="text-xs text-muted-foreground">Eficiência do sistema</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       <Card>
         <CardHeader>
@@ -283,7 +249,7 @@ export function AuditLogsList() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Tipo de Ação</label>
               <Select
@@ -323,6 +289,26 @@ export function AuditLogsList() {
             </div>
 
             <div className="space-y-2">
+              <label className="text-sm font-medium">Usuário</label>
+              <Select
+                value={filters.userId}
+                onValueChange={(value) => handleFilterChange("userId", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o usuário" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os usuários</SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.full_name || user.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <label className="text-sm font-medium">&nbsp;</label>
               <Button variant="outline" onClick={clearFilters} className="w-full">
                 Limpar Filtros
@@ -332,17 +318,18 @@ export function AuditLogsList() {
         </CardContent>
       </Card>
 
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold">Logs de Atividade</h2>
-          <div className="text-sm text-muted-foreground">
-            {totalCount} registros encontrados
-          </div>
-        </div>
-
-        {logs.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
+      <Card>
+        <CardHeader>
+          <CardTitle>Logs de Atividade</CardTitle>
+          <CardContent className="pt-0">
+            <div className="text-sm text-muted-foreground">
+              {totalCount} registros encontrados
+            </div>
+          </CardContent>
+        </CardHeader>
+        <CardContent>
+          {logs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12">
               <div className="text-center">
                 <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Nenhum log encontrado</h3>
@@ -350,144 +337,168 @@ export function AuditLogsList() {
                   Não há registros de atividade para os filtros selecionados
                 </p>
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {logs.map((log) => (
-              <Card key={log.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className="flex items-center gap-2">
-                        {getActionIcon(log.action_type)}
-                        <Badge variant={getActionColor(log.action_type, log.success)}>
-                          {actionTypeLabels[log.action_type] || log.action_type}
-                        </Badge>
-                        {log.success === false && (
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Ação</TableHead>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Entidade</TableHead>
+                    <TableHead>Data/Hora</TableHead>
+                    <TableHead>Detalhes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {logs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getActionIcon(log.action_type)}
+                          <Badge variant={getActionColor(log.action_type, log.success)}>
+                            {actionTypeLabels[log.action_type] || log.action_type}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <div className="font-medium">
+                              {log.users?.full_name || "Nome não informado"}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {log.users?.email}
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {log.success === false ? (
                           <Badge variant="destructive">
                             <AlertTriangle className="h-3 w-3 mr-1" />
                             Erro
                           </Badge>
+                        ) : (
+                          <Badge variant="default">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Sucesso
+                          </Badge>
                         )}
-                      </div>
-                      
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-2 text-sm">
-                          <User className="h-3 w-3 text-muted-foreground" />
-                          <span className="font-medium">
-                            {log.users?.full_name || log.users?.email || "Usuário desconhecido"}
-                          </span>
+                      </TableCell>
+                      <TableCell>
+                        {log.entity_type ? (
+                          <div>
+                            <div className="font-medium">{log.entity_type}</div>
+                            {log.entity_id && (
+                              <div className="text-sm text-muted-foreground">
+                                ID: {log.entity_id.slice(0, 8)}...
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <div className="text-sm">
+                            {formatDate(log.timestamp)}
+                          </div>
                         </div>
-                        
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span>{formatDate(log.timestamp)}</span>
-                        </div>
-                        
-                        {log.entity_type && (
-                          <div className="text-sm text-muted-foreground">
-                            Entidade: {log.entity_type}
-                            {log.entity_id && ` (ID: ${log.entity_id})`}
+                      </TableCell>
+                      <TableCell>
+                        {log.error_message ? (
+                          <div className="max-w-xs">
+                            <div className="text-sm text-red-600 bg-red-50 p-2 rounded truncate">
+                              {log.error_message}
+                            </div>
                           </div>
+                        ) : (
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
                         )}
-                        
-                        {log.error_message && (
-                          <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                            <strong>Erro:</strong> {log.error_message}
-                          </div>
-                        )}
-                        
-                        {log.metadata && Object.keys(log.metadata).length > 0 && (
-                          <div className="text-sm text-muted-foreground">
-                            <details className="cursor-pointer">
-                              <summary className="font-medium">Detalhes</summary>
-                              <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-x-auto">
-                                {JSON.stringify(log.metadata, null, 2)}
-                              </pre>
-                            </details>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
 
-      {totalPages > 1 && (
-        <div className="flex justify-center mt-8">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious 
-                  href="#"
-                  size="default"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage > 1) {
-                      setCurrentPage(currentPage - 1);
-                    }
-                  }}
-                  className={currentPage <= 1 ? 'pointer-events-none opacity-50' : ''}
-                />
-              </PaginationItem>
-              
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNumber;
-                if (totalPages <= 5) {
-                  pageNumber = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNumber = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNumber = totalPages - 4 + i;
-                } else {
-                  pageNumber = currentPage - 2 + i;
-                }
+              {totalPages > 1 && (
+                <div className="mt-6">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage > 1) {
+                              setCurrentPage(currentPage - 1);
+                            }
+                          }}
+                          className={currentPage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
 
-                return (
-                  <PaginationItem key={pageNumber}>
-                    <PaginationLink
-                      href="#"
-                      size="icon"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setCurrentPage(pageNumber);
-                      }}
-                      isActive={currentPage === pageNumber}
-                    >
-                      {pageNumber}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-              })}
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                        if (
+                          page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 1 && page <= currentPage + 1)
+                        ) {
+                          return (
+                            <PaginationItem key={page}>
+                              <PaginationLink
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setCurrentPage(page);
+                                }}
+                                isActive={currentPage === page}
+                                className="cursor-pointer"
+                              >
+                                {page}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        } else if (
+                          page === currentPage - 2 ||
+                          page === currentPage + 2
+                        ) {
+                          return (
+                            <PaginationItem key={page}>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          );
+                        }
+                        return null;
+                      })}
 
-              {totalPages > 5 && currentPage < totalPages - 2 && (
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
+                      <PaginationItem>
+                        <PaginationNext
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage < totalPages) {
+                              setCurrentPage(currentPage + 1);
+                            }
+                          }}
+                          className={currentPage >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
               )}
-
-              <PaginationItem>
-                <PaginationNext 
-                  href="#"
-                  size="default"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage < totalPages) {
-                      setCurrentPage(currentPage + 1);
-                    }
-                  }}
-                  className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : ''}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

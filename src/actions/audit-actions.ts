@@ -2,12 +2,31 @@
 
 import { getCurrentUserAndTenant } from "@/lib/auth/server-helpers";
 
+export async function getUsersForFilter() {
+  const { tenantId, supabase } = await getCurrentUserAndTenant();
+
+  const { data: users, error } = await supabase
+    .from("users")
+    .select("id, email, full_name")
+    .eq("tenant_id", tenantId)
+    .eq("active", true)
+    .order("full_name");
+
+  if (error) {
+    console.error("Error fetching users for filter:", error);
+    return null;
+  }
+
+  return users || [];
+}
+
 export async function getActivityLogs(
   page: number = 1, 
   limit: number = 20,
   actionType?: string,
   dateFrom?: string,
-  dateTo?: string
+  dateTo?: string,
+  userId?: string
 ) {
   const { tenantId, supabase } = await getCurrentUserAndTenant();
 
@@ -44,6 +63,10 @@ export async function getActivityLogs(
 
   if (dateTo) {
     query = query.lte("timestamp", dateTo);
+  }
+
+  if (userId && userId !== "all") {
+    query = query.eq("user_id", userId);
   }
 
   const { count: totalCount, error: countError } = await supabase
