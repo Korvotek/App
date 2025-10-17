@@ -136,6 +136,77 @@ export type Database = {
           },
         ]
       }
+      conta_azul_services: {
+        Row: {
+          cnae_code: string | null
+          code: string | null
+          cost: number | null
+          created_at: string
+          description: string | null
+          external_code: string | null
+          external_id: string
+          id: string
+          legacy_id: number | null
+          lei_116: string | null
+          municipality_code: string | null
+          price: number | null
+          raw_payload: Json | null
+          service_type: string | null
+          status: string | null
+          synced_at: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          cnae_code?: string | null
+          code?: string | null
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          external_code?: string | null
+          external_id: string
+          id?: string
+          legacy_id?: number | null
+          lei_116?: string | null
+          municipality_code?: string | null
+          price?: number | null
+          raw_payload?: Json | null
+          service_type?: string | null
+          status?: string | null
+          synced_at?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          cnae_code?: string | null
+          code?: string | null
+          cost?: number | null
+          created_at?: string
+          description?: string | null
+          external_code?: string | null
+          external_id?: string
+          id?: string
+          legacy_id?: number | null
+          lei_116?: string | null
+          municipality_code?: string | null
+          price?: number | null
+          raw_payload?: Json | null
+          service_type?: string | null
+          status?: string | null
+          synced_at?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conta_azul_services_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_contracts: {
         Row: {
           contract_date: string | null
