@@ -16,8 +16,13 @@ interface Customer {
   phone: string | null;
   city: string | null;
   state: string | null;
+  country: string | null;
+  postal_code: string | null;
+  person_type: string | null;
   active: boolean | null;
   external_id: string;
+  synced_at: string | null;
+  raw_payload: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }
@@ -142,10 +147,12 @@ export function CustomersList() {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead>Tipo</TableHead>
               <TableHead>Documento</TableHead>
-              <TableHead>Cidade</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Cidade/UF</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Sincronizado</TableHead>
               <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -155,13 +162,31 @@ export function CustomersList() {
                 <TableCell className="font-medium">
                   {customer.name || "Sem nome"}
                 </TableCell>
-                <TableCell>{customer.email || "Sem email"}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">
+                    {customer.person_type === "F" ? "Pessoa Física" : 
+                     customer.person_type === "J" ? "Pessoa Jurídica" : 
+                     customer.person_type || "Não informado"}
+                  </Badge>
+                </TableCell>
                 <TableCell>{customer.document || "Sem documento"}</TableCell>
-                <TableCell>{customer.city || "Sem cidade"}</TableCell>
+                <TableCell>{customer.email || "Sem email"}</TableCell>
+                <TableCell>
+                  {customer.city && customer.state 
+                    ? `${customer.city}/${customer.state}`
+                    : customer.city || customer.state || "Não informado"
+                  }
+                </TableCell>
                 <TableCell>
                   <Badge variant={customer.active ? "default" : "secondary"}>
                     {customer.active ? "Ativo" : "Inativo"}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  {customer.synced_at 
+                    ? new Date(customer.synced_at).toLocaleDateString('pt-BR')
+                    : "Nunca"
+                  }
                 </TableCell>
                 <TableCell>
                   <PermissionGate resource="customers" action="read">

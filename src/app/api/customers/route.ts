@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       .from("conta_azul_customers")
       .select("*", { count: "exact" })
       .eq("tenant_id", tenantId)
-      .order("created_at", { ascending: false });
+      .order("synced_at", { ascending: false, nullsFirst: false });
 
     // Adicionar filtro de busca se fornecido
     if (search) {
