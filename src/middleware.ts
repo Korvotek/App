@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  // Middleware simplificado para evitar erros no Vercel
   const pathname = request.nextUrl.pathname;
 
   // Permitir acesso a arquivos estáticos e APIs
@@ -14,26 +13,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Para rotas protegidas, redirecionar para login se não autenticado
-  if (pathname.startsWith("/dashboard")) {
-    // Verificar se há token de sessão nos cookies
-    const sessionCookie = request.cookies.get("sb-access-token") || 
-                         request.cookies.get("supabase-auth-token");
-    
-    if (!sessionCookie) {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/login";
-      redirectUrl.searchParams.set("redirectedFrom", pathname);
-      return NextResponse.redirect(redirectUrl);
-    }
-  }
-
-  // Se já está logado e tenta acessar login, redirecionar para dashboard
+  // Middleware simplificado - deixar o useAuth fazer o controle de acesso
+  // Apenas redirecionar de /login para /dashboard se já autenticado
   if (pathname.startsWith("/login")) {
-    const sessionCookie = request.cookies.get("sb-access-token") || 
-                         request.cookies.get("supabase-auth-token");
+    // Verificar se há qualquer cookie do Supabase
+    const hasSupabaseCookie = Array.from(request.cookies.getAll()).some(cookie => 
+      cookie.name.includes('supabase') || 
+      cookie.name.includes('sb-') ||
+      cookie.name.includes('auth')
+    );
     
-    if (sessionCookie) {
+    if (hasSupabaseCookie) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/dashboard";
       return NextResponse.redirect(redirectUrl);

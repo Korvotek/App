@@ -40,6 +40,8 @@ export function hasPermission(
 }
 
 export function canAccessRoute(userRole: UserRole | null, route: string): boolean {
+  console.log(`[permissions] canAccessRoute called: role=${userRole}, route=${route}`);
+  
   const routePermissions: Record<string, { resource: string; action: string }> = {
     "/dashboard/usuarios": { resource: "users", action: "read" },
     "/dashboard/auditoria": { resource: "audit", action: "read" },
@@ -50,7 +52,13 @@ export function canAccessRoute(userRole: UserRole | null, route: string): boolea
   };
 
   const permission = routePermissions[route];
-  if (!permission) return true; // Rotas não listadas são públicas
+  if (!permission) {
+    console.log(`[permissions] No specific permission for route ${route}, allowing access`);
+    return true; // Rotas não listadas são públicas
+  }
 
-  return hasPermission(userRole, permission.resource, permission.action);
+  const hasAccess = hasPermission(userRole, permission.resource, permission.action);
+  console.log(`[permissions] Route ${route} requires ${permission.resource}:${permission.action}, hasAccess=${hasAccess}`);
+  
+  return hasAccess;
 }
