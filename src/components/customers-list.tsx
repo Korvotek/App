@@ -6,8 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PermissionGate } from "@/components/auth/permission-gate";
-import { Eye, Edit, Trash2, RefreshCw, Search, Plus } from "lucide-react";
-import Link from "next/link";
+import { Eye, RefreshCw, Search } from "lucide-react";
 
 interface Customer {
   id: string;
@@ -112,23 +111,12 @@ export function CustomersList() {
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
-          <PermissionGate resource="customers" action="sync">
-            <Button onClick={handleSyncCustomers} variant="outline">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Sincronizar
-            </Button>
-          </PermissionGate>
-          
-          <PermissionGate resource="customers" action="create">
-            <Button asChild>
-              <Link href="/dashboard/clientes/cadastrar">
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Cliente
-              </Link>
-            </Button>
-          </PermissionGate>
-        </div>
+        <PermissionGate resource="customers" action="sync">
+          <Button onClick={handleSyncCustomers} variant="outline">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Sincronizar
+          </Button>
+        </PermissionGate>
       </div>
 
       {/* Busca */}
@@ -176,29 +164,11 @@ export function CustomersList() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <PermissionGate resource="customers" action="read">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/dashboard/clientes/${customer.id}`}>
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </PermissionGate>
-                    
-                    <PermissionGate resource="customers" action="update">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/dashboard/clientes/${customer.id}/editar`}>
-                          <Edit className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </PermissionGate>
-                    
-                    <PermissionGate resource="customers" action="delete">
-                      <Button variant="ghost" size="sm">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </PermissionGate>
-                  </div>
+                  <PermissionGate resource="customers" action="read">
+                    <Button variant="ghost" size="sm">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </PermissionGate>
                 </TableCell>
               </TableRow>
             ))}
