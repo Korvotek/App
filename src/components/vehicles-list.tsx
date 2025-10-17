@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -19,51 +19,30 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
-import { getVehicles } from "@/actions/vehicle-actions";
 import { PermissionGate } from "@/components/auth/permission-gate";
 import Link from "next/link";
 import { Plus, Edit, Eye, Car } from "lucide-react";
-
-type Vehicle = {
-  id: string;
-  brand: string;
-  model: string;
-  license_plate: string;
-  year: number;
-  vehicle_type: "CARGA" | "TANQUE" | null;
-  fuel_type: string | null;
-  module_capacity: number | null;
-  active: boolean | null;
-  created_at: string | null;
-};
+import { useVehicles } from "@/hooks/use-vehicles";
+import { usePagination } from "@/hooks/use-pagination";
 
 export function VehiclesList() {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const limit = 12;
+  
+  const pagination = usePagination({
+    initialPage: 1,
+    initialLimit: 12,
+  });
 
-  useEffect(() => {
-    const fetchVehicles = async () => {
-      try {
-        const data = await getVehicles(currentPage, limit);
-        if (data) {
-          setVehicles(data.vehicles);
-          setTotalPages(data.totalPages);
-          setTotalCount(data.totalCount);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar veículos:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { data: vehiclesData, isLoading, error } = useVehicles({
+    page: pagination.currentPage,
+    limit: pagination.limit,
+  });
 
-    fetchVehicles();
-  }, [currentPage]);
+  // Atualizar total de itens quando os dados chegarem
+  const totalCount = vehiclesData?.totalCount || 0;
+  pagination.totalItems = totalCount;
+
+  const vehicles = vehiclesData?.vehicles || [];
 
   const filteredVehicles = vehicles.filter(
     (vehicle) =>
@@ -94,13 +73,21 @@ export function VehiclesList() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-2 text-muted-foreground">Carregando veículos...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500">Erro ao carregar veículos</p>
       </div>
     );
   }
@@ -241,7 +228,7 @@ export function VehiclesList() {
         </div>
       )}
 
-      {totalPages > 1 && (
+      {pagination.totalPages > 1 && (
         <div className="flex justify-center mt-8">
           <Pagination>
             <PaginationContent>
@@ -251,26 +238,24 @@ export function VehiclesList() {
                   size="default"
                   onClick={(e) => {
                     e.preventDefault();
-                    if (currentPage > 1) {
-                      setCurrentPage(currentPage - 1);
-                    }
+                    pagination.goToPreviousPage();
                   }}
                   className={
-                    currentPage <= 1 ? "pointer-events-none opacity-50" : ""
+                    !pagination.hasPreviousPage ? "pointer-events-none opacity-50" : ""
                   }
                 />
               </PaginationItem>
 
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                 let pageNumber;
-                if (totalPages <= 5) {
+                if (pagination.totalPages <= 5) {
                   pageNumber = i + 1;
-                } else if (currentPage <= 3) {
+                } else if (pagination.currentPage <= 3) {
                   pageNumber = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNumber = totalPages - 4 + i;
+                } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                  pageNumber = pagination.totalPages - 4 + i;
                 } else {
-                  pageNumber = currentPage - 2 + i;
+                  pageNumber = pagination.currentPage - 2 + i;
                 }
 
                 return (
@@ -280,9 +265,9 @@ export function VehiclesList() {
                       size="icon"
                       onClick={(e) => {
                         e.preventDefault();
-                        setCurrentPage(pageNumber);
+                        pagination.goToPage(pageNumber);
                       }}
-                      isActive={currentPage === pageNumber}
+                      isActive={pagination.currentPage === pageNumber}
                     >
                       {pageNumber}
                     </PaginationLink>
@@ -290,7 +275,7 @@ export function VehiclesList() {
                 );
               })}
 
-              {totalPages > 5 && currentPage < totalPages - 2 && (
+              {pagination.totalPages > 5 && pagination.currentPage < pagination.totalPages - 2 && (
                 <PaginationItem>
                   <PaginationEllipsis />
                 </PaginationItem>
@@ -302,12 +287,10 @@ export function VehiclesList() {
                   size="default"
                   onClick={(e) => {
                     e.preventDefault();
-                    if (currentPage < totalPages) {
-                      setCurrentPage(currentPage + 1);
-                    }
+                    pagination.goToNextPage();
                   }}
                   className={
-                    currentPage >= totalPages
+                    !pagination.hasNextPage
                       ? "pointer-events-none opacity-50"
                       : ""
                   }

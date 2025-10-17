@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PermissionGate } from "@/components/auth/permission-gate";
 import { Eye, RefreshCw } from "lucide-react";
+import { useCustomers } from "@/hooks/use-customers";
+import { usePagination } from "@/hooks/use-pagination";
 
 interface Customer {
   id: string;
@@ -26,58 +28,29 @@ interface Customer {
   updated_at: string;
 }
 
-interface CustomersResponse {
-  customers: Customer[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
 export function CustomersList() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const limit = 10;
+  
+  const pagination = usePagination({
+    initialPage: 1,
+    initialLimit: 10,
+  });
 
-  const fetchCustomers = async (page: number = 1, search: string = "") => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        ...(search && { search }),
-      });
+  const { data: customersData, isLoading, error } = useCustomers({
+    page: pagination.currentPage,
+    limit: pagination.limit,
+    search: searchTerm,
+  });
 
-      const response = await fetch(`/api/customers?${params}`);
-      if (!response.ok) {
-        throw new Error("Erro ao carregar clientes");
-      }
+  // Atualizar total de itens quando os dados chegarem
+  const total = customersData?.total || 0;
+  pagination.totalItems = total;
 
-      const data: CustomersResponse = await response.json();
-      setCustomers(data.customers);
-      setTotalPages(data.totalPages);
-      setTotal(data.total);
-      setCurrentPage(data.page);
-    } catch (error) {
-      console.error("Erro ao carregar clientes:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const customers = customersData?.customers || [];
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    setCurrentPage(1);
-    fetchCustomers(1, value);
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    fetchCustomers(page, searchTerm);
+    pagination.resetPage();
   };
 
   const handleSyncCustomers = async () => {
@@ -90,18 +63,23 @@ export function CustomersList() {
         throw new Error("Erro ao sincronizar clientes");
       }
 
-      fetchCustomers(currentPage, searchTerm);
+      // Refetch dos dados após sincronização
+      window.location.reload();
     } catch (error) {
       console.error("Erro ao sincronizar clientes:", error);
     }
   };
 
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return <div className="text-center py-8">Carregando clientes...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500">Erro ao carregar clientes</p>
+      </div>
+    );
   }
 
   return (
@@ -156,7 +134,7 @@ export function CustomersList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {customers.map((customer) => (
+            {customers.map((customer: Customer) => (
               <TableRow key={customer.id}>
                 <TableCell className="font-medium">
                   {customer.name || "Sem nome"}
@@ -201,27 +179,27 @@ export function CustomersList() {
       )}
 
       {/* Paginação */}
-      {totalPages > 1 && (
+      {pagination.totalPages > 1 && (
         <div className="flex justify-center">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
+              onClick={() => pagination.goToPreviousPage()}
+              disabled={!pagination.hasPreviousPage}
             >
               Anterior
             </Button>
             
             <span className="text-sm text-muted-foreground">
-              Página {currentPage} de {totalPages} ({total} clientes)
+              Página {pagination.currentPage} de {pagination.totalPages} ({total} clientes)
             </span>
             
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              onClick={() => pagination.goToNextPage()}
+              disabled={!pagination.hasNextPage}
             >
               Próxima
             </Button>

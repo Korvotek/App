@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -19,10 +19,11 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
-import { getWorkers } from "@/actions/worker-actions";
 import { PermissionGate } from "@/components/auth/permission-gate";
 import Link from "next/link";
 import { Plus, Edit, Eye, Users } from "lucide-react";
+import { useWorkers } from "@/hooks/use-workers";
+import { usePagination } from "@/hooks/use-pagination";
 
 type Worker = {
   id: string;
@@ -44,32 +45,23 @@ type Worker = {
 };
 
 export function WorkersList() {
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const limit = 12;
+  
+  const pagination = usePagination({
+    initialPage: 1,
+    initialLimit: 12,
+  });
 
-  useEffect(() => {
-    const fetchWorkers = async () => {
-      try {
-        const data = await getWorkers(currentPage, limit);
-        if (data) {
-          setWorkers(data.workers);
-          setTotalPages(data.totalPages);
-          setTotalCount(data.totalCount);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar funcionários:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { data: workersData, isLoading, error } = useWorkers({
+    page: pagination.currentPage,
+    limit: pagination.limit,
+  });
 
-    fetchWorkers();
-  }, [currentPage]);
+  // Atualizar total de itens quando os dados chegarem
+  const totalCount = workersData?.totalCount || 0;
+  pagination.totalItems = totalCount;
+
+  const workers = workersData?.workers || [];
 
   const filteredWorkers = workers.filter(
     (worker) =>
@@ -92,7 +84,7 @@ export function WorkersList() {
     return roles;
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
@@ -101,6 +93,14 @@ export function WorkersList() {
             Carregando funcionários...
           </p>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500">Erro ao carregar funcionários</p>
       </div>
     );
   }
@@ -251,7 +251,7 @@ export function WorkersList() {
         </div>
       )}
 
-      {totalPages > 1 && (
+      {pagination.totalPages > 1 && (
         <div className="flex justify-center mt-8">
           <Pagination>
             <PaginationContent>
@@ -261,26 +261,24 @@ export function WorkersList() {
                   size="default"
                   onClick={(e) => {
                     e.preventDefault();
-                    if (currentPage > 1) {
-                      setCurrentPage(currentPage - 1);
-                    }
+                    pagination.goToPreviousPage();
                   }}
                   className={
-                    currentPage <= 1 ? "pointer-events-none opacity-50" : ""
+                    !pagination.hasPreviousPage ? "pointer-events-none opacity-50" : ""
                   }
                 />
               </PaginationItem>
 
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                 let pageNumber;
-                if (totalPages <= 5) {
+                if (pagination.totalPages <= 5) {
                   pageNumber = i + 1;
-                } else if (currentPage <= 3) {
+                } else if (pagination.currentPage <= 3) {
                   pageNumber = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNumber = totalPages - 4 + i;
+                } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                  pageNumber = pagination.totalPages - 4 + i;
                 } else {
-                  pageNumber = currentPage - 2 + i;
+                  pageNumber = pagination.currentPage - 2 + i;
                 }
 
                 return (
@@ -290,9 +288,9 @@ export function WorkersList() {
                       size="icon"
                       onClick={(e) => {
                         e.preventDefault();
-                        setCurrentPage(pageNumber);
+                        pagination.goToPage(pageNumber);
                       }}
-                      isActive={currentPage === pageNumber}
+                      isActive={pagination.currentPage === pageNumber}
                     >
                       {pageNumber}
                     </PaginationLink>
@@ -300,7 +298,7 @@ export function WorkersList() {
                 );
               })}
 
-              {totalPages > 5 && currentPage < totalPages - 2 && (
+              {pagination.totalPages > 5 && pagination.currentPage < pagination.totalPages - 2 && (
                 <PaginationItem>
                   <PaginationEllipsis />
                 </PaginationItem>
@@ -312,12 +310,10 @@ export function WorkersList() {
                   size="default"
                   onClick={(e) => {
                     e.preventDefault();
-                    if (currentPage < totalPages) {
-                      setCurrentPage(currentPage + 1);
-                    }
+                    pagination.goToNextPage();
                   }}
                   className={
-                    currentPage >= totalPages
+                    !pagination.hasNextPage
                       ? "pointer-events-none opacity-50"
                       : ""
                   }
