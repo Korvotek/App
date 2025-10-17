@@ -19,6 +19,7 @@ import {
   Users,
   Activity,
   Plug,
+  UserCheck,
 } from "lucide-react";
 import { PermissionGate } from "@/components/auth/permission-gate";
 import type { User } from "@supabase/supabase-js";
@@ -40,6 +41,12 @@ const menuItems = [
     label: "Veículos",
     href: "/dashboard/veiculos",
     permission: { resource: "vehicles", action: "read" },
+  },
+  {
+    icon: UserCheck,
+    label: "Clientes",
+    href: "/dashboard/clientes",
+    permission: { resource: "customers", action: "read" },
   },
   {
     icon: Users,

@@ -11,22 +11,22 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: "audit", actions: ["read"] },
     { resource: "employees", actions: ["read", "create", "update", "delete"] },
     { resource: "vehicles", actions: ["read", "create", "update", "delete"] },
+    { resource: "customers", actions: ["read", "create", "update", "delete", "sync"] },
     { resource: "dashboard", actions: ["read"] },
-    { resource: "clients", actions: ["read", "sync"] },
     { resource: "integrations", actions: ["read", "manage"] },
   ],
   OPERATOR: [
     { resource: "employees", actions: ["read", "create", "update", "delete"] },
     { resource: "vehicles", actions: ["read", "create", "update", "delete"] },
+    { resource: "customers", actions: ["read", "create", "update", "delete", "sync"] },
     { resource: "dashboard", actions: ["read"] },
-    { resource: "clients", actions: ["read", "sync"] },
     { resource: "integrations", actions: ["read"] },
   ],
   VIEWER: [
     { resource: "employees", actions: ["read"] },
     { resource: "vehicles", actions: ["read"] },
+    { resource: "customers", actions: ["read"] },
     { resource: "dashboard", actions: ["read"] },
-    { resource: "clients", actions: ["read"] },
   ],
 };
 
@@ -70,7 +70,7 @@ export function canAccessRoute(
     {
       "/dashboard/usuarios": { resource: "users", action: "read" },
       "/dashboard/auditoria": { resource: "audit", action: "read" },
-      "/dashboard/clientes": { resource: "clients", action: "read" },
+      "/dashboard/clientes": { resource: "customers", action: "read" },
       "/dashboard/funcionarios": { resource: "employees", action: "read" },
       "/dashboard/veiculos": { resource: "vehicles", action: "read" },
       "/dashboard": { resource: "dashboard", action: "read" },
