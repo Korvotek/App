@@ -1,10 +1,10 @@
 const LOG_PREFIX = "[integrations/conta-azul]";
 
 export const CONTA_AZUL_PROVIDER = "conta_azul";
-const DEFAULT_AUTH_URL = "https://api.contaazul.com/oauth2/authorize";
+const DEFAULT_AUTH_URL = "https://auth.contaazul.com/oauth2/authorize";
 const DEFAULT_TOKEN_URL = "https://api.contaazul.com/oauth2/token";
 const DEFAULT_API_BASE_URL = "https://api.contaazul.com";
-const DEFAULT_SCOPE = "offline_access sales finance";
+const DEFAULT_SCOPE = "openid profile aws.cognito.signin.user.admin";
 
 interface ContaAzulConfig {
   authUrl: string;
@@ -55,12 +55,12 @@ function sanitizeScope(rawScope: string | undefined | null) {
 }
 
 export function getContaAzulConfig(): ContaAzulConfig {
-  const clientId = process.env.CONTA_AZUL_CLIENT_ID;
+  const clientId = process.env.NEXT_PUBLIC_CONTA_AZUL_CLIENT_ID;
   const clientSecret = process.env.CONTA_AZUL_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
     throw new Error(
-      "Variaveis de ambiente CONTA_AZUL_CLIENT_ID e CONTA_AZUL_CLIENT_SECRET sao obrigatorias",
+      "Variaveis de ambiente NEXT_PUBLIC_CONTA_AZUL_CLIENT_ID e CONTA_AZUL_CLIENT_SECRET sao obrigatorias",
     );
   }
 
