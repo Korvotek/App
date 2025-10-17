@@ -29,29 +29,29 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { 
-    icon: UserCog, 
-    label: "Funcionários", 
+  {
+    icon: UserCog,
+    label: "Funcionários",
     href: "/dashboard/funcionarios",
-    permission: { resource: "employees", action: "read" }
+    permission: { resource: "employees", action: "read" },
   },
-  { 
-    icon: Car, 
-    label: "Veículos", 
+  {
+    icon: Car,
+    label: "Veículos",
     href: "/dashboard/veiculos",
-    permission: { resource: "vehicles", action: "read" }
+    permission: { resource: "vehicles", action: "read" },
   },
-  { 
-    icon: Users, 
-    label: "Usuários", 
+  {
+    icon: Users,
+    label: "Usuários",
     href: "/dashboard/usuarios",
-    permission: { resource: "users", action: "read" }
+    permission: { resource: "users", action: "read" },
   },
-  { 
-    icon: Activity, 
-    label: "Auditoria", 
+  {
+    icon: Activity,
+    label: "Auditoria",
     href: "/dashboard/auditoria",
-    permission: { resource: "audit", action: "read" }
+    permission: { resource: "audit", action: "read" },
   },
   {
     icon: Plug,
