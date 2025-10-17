@@ -2,8 +2,8 @@ const LOG_PREFIX = "[integrations/conta-azul]";
 
 export const CONTA_AZUL_PROVIDER = "conta_azul";
 const DEFAULT_AUTH_URL = "https://auth.contaazul.com/oauth2/authorize";
-const DEFAULT_TOKEN_URL = "https://api.contaazul.com/oauth2/token";
-const DEFAULT_API_BASE_URL = "https://api.contaazul.com";
+const DEFAULT_TOKEN_URL = "https://auth.contaazul.com/oauth2/token";
+const DEFAULT_API_BASE_URL = "https://api-v2.contaazul.com";
 const DEFAULT_SCOPE = "openid profile aws.cognito.signin.user.admin";
 
 interface ContaAzulConfig {
@@ -108,6 +108,8 @@ export async function exchangeCodeForTokens(params: {
   const config = getContaAzulConfig();
 
   const body = new URLSearchParams({
+    client_id: config.clientId,
+    client_secret: config.clientSecret,
     grant_type: "authorization_code",
     code: params.code,
     redirect_uri: params.redirectUri,
