@@ -24,6 +24,7 @@ const pathLabels: Record<string, string> = {
   produtos: "Produtos",
   relatorios: "Relatórios",
   configuracoes: "Configurações",
+  integracoes: "Integracoes",
 };
 
 export function DashboardBreadcrumb() {

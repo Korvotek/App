@@ -42,7 +42,6 @@ export function DashboardHeader({
   return (
     <header className="bg-background border-b border-border">
       <div className="flex items-center justify-between px-6 py-4">
-        {/* Left side - Title and Description */}
         <div className="flex-1">
           {title && (
             <div>
@@ -54,7 +53,6 @@ export function DashboardHeader({
           )}
         </div>
 
-        {/* Center - Search */}
         {showSearch && (
           <div className="flex-1 max-w-md mx-6">
             <DashboardSearch
@@ -64,9 +62,7 @@ export function DashboardHeader({
           </div>
         )}
 
-        {/* Right side - Notifications and User Menu */}
         <div className="flex items-center gap-4">
-          {/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="relative">
@@ -111,7 +107,6 @@ export function DashboardHeader({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">

@@ -54,39 +54,7 @@ const initialState: AuthState = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const CLIENT_LOG_PREFIX = "[use-auth]";
-
-function clientLog(
-  level: "log" | "warn" | "error",
-  message: string,
-  meta?: Record<string, unknown>,
-) {
-  const logger = console[level];
-  if (meta) {
-    logger?.(`${CLIENT_LOG_PREFIX} ${message}`, meta);
-  } else {
-    logger?.(`${CLIENT_LOG_PREFIX} ${message}`);
-  }
-}
-
-const logClientInfo = (
-  message: string,
-  meta?: Record<string, unknown>,
-) => clientLog("log", message, meta);
-
-const logClientWarn = (
-  message: string,
-  meta?: Record<string, unknown>,
-) => clientLog("warn", message, meta);
-
-const logClientError = (
-  message: string,
-  meta?: Record<string, unknown>,
-) => clientLog("error", message, meta);
-
 async function fetchUserProfile(user: User): Promise<UserProfile | null> {
-  logClientInfo("Fetching profile for user", { userId: user.id });
-
   try {
     const { data: userData, error } = await supabase
       .from("users")
@@ -107,37 +75,15 @@ async function fetchUserProfile(user: User): Promise<UserProfile | null> {
       .eq("id", user.id)
       .maybeSingle();
 
-    logClientInfo("Fetch profile query result", {
-      found: !!userData,
-      role: userData?.role,
-      error: error?.message,
-    });
-
     if (error) {
-      logClientWarn("Error querying user profile", {
-        userId: user.id,
-        error: error.message,
-      });
       return null;
     }
 
     if (userData) {
-      logClientInfo("User profile found", {
-        userId: user.id,
-        role: userData.role,
-      });
       return userData as UserProfile;
     }
-
-    logClientWarn(
-      "User not found in database, expected callback to provision",
-      { userId: user.id },
-    );
   } catch (error) {
-    logClientError("Unexpected error fetching profile", {
-      userId: user.id,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    console.error("Error fetching user profile:", error);
   }
 
   return null;
@@ -177,7 +123,6 @@ export function AuthProvider({
     let isMounted = true;
 
     const loadUser = async () => {
-      logClientInfo("Starting authentication check");
       setState((prev) => ({
         ...prev,
         loading: prev.loading || !prev.user,
@@ -189,18 +134,9 @@ export function AuthProvider({
           error,
         } = await supabase.auth.getUser();
 
-        logClientInfo("getUser result", {
-          hasUser: !!user,
-          userId: user?.id,
-          error: error?.message,
-        });
-
         if (!isMounted) return;
 
         if (error || !user) {
-          logClientWarn("No authenticated user found after getUser", {
-            error: error?.message,
-          });
           setState({
             user: null,
             userData: null,
@@ -210,14 +146,7 @@ export function AuthProvider({
           return;
         }
 
-        logClientInfo("Authenticated user found, fetching profile", {
-          userId: user.id,
-        });
         const profile = await fetchUserProfile(user);
-        logClientInfo("Profile fetch completed", {
-          hasProfile: !!profile,
-          role: profile?.role,
-        });
 
         if (!isMounted) return;
 
@@ -229,14 +158,6 @@ export function AuthProvider({
           const nextRole =
             profile?.role ?? prev.role ?? (metadataRole ?? null);
 
-          logClientInfo("Updating auth state", {
-            hasProfile: !!profile,
-            profileRole: profile?.role,
-            metadataRole,
-            nextRole,
-            userId: user.id,
-          });
-
           return {
             user,
             userData: nextProfile,
@@ -245,9 +166,7 @@ export function AuthProvider({
           };
         });
       } catch (err) {
-        logClientError("Unhandled error during loadUser", {
-          error: err instanceof Error ? err.message : String(err),
-        });
+        console.error("Error during authentication:", err);
         if (!isMounted) return;
         setState({
           user: null,
@@ -263,11 +182,6 @@ export function AuthProvider({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      logClientInfo("Auth state change event received", {
-        event,
-        hasSessionUser: !!session?.user,
-      });
-
       if (!isMounted) return;
 
       if (event === "SIGNED_OUT" || !session?.user) {
@@ -283,6 +197,7 @@ export function AuthProvider({
       if (event === "SIGNED_IN" || event === "USER_UPDATED") {
         setState((prev) => ({ ...prev, loading: true }));
       }
+
       try {
         const { data: userResult, error: getUserError } =
           await supabase.auth.getUser();
@@ -291,10 +206,6 @@ export function AuthProvider({
         if (!isMounted) return;
 
         if (getUserError || !verifiedUser) {
-          logClientWarn("Auth state change but getUser returned no user", {
-            event,
-            error: getUserError?.message,
-          });
           setState({
             user: null,
             userData: null,
@@ -323,10 +234,7 @@ export function AuthProvider({
           };
         });
       } catch (err) {
-        logClientError("Unhandled error during auth state change getUser", {
-          event,
-          error: err instanceof Error ? err.message : String(err),
-        });
+        console.error("Error during auth state change:", err);
         if (!isMounted) return;
         setState({
           user: null,
@@ -379,9 +287,7 @@ export function AuthProvider({
       try {
         await supabase.auth.signOut();
       } catch (error) {
-        logClientError("Error signing out on client", {
-          error: error instanceof Error ? error.message : String(error),
-        });
+        console.error("Error signing out:", error);
       }
 
       try {
@@ -394,12 +300,10 @@ export function AuthProvider({
 
         if (!response.ok) {
           const { message } = await response.json();
-          logClientError("Failed to clear server session", { message });
+          console.error("Failed to clear server session:", message);
         }
       } catch (error) {
-        logClientError("Error calling server signout route", {
-          error: error instanceof Error ? error.message : String(error),
-        });
+        console.error("Error calling signout route:", error);
       } finally {
         setState({
           user: null,

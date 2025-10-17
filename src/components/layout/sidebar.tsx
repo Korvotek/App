@@ -18,6 +18,7 @@ import {
   Car,
   Users,
   Activity,
+  Plug,
 } from "lucide-react";
 import { PermissionGate } from "@/components/auth/permission-gate";
 import type { User } from "@supabase/supabase-js";
@@ -51,6 +52,12 @@ const menuItems = [
     label: "Auditoria", 
     href: "/dashboard/auditoria",
     permission: { resource: "audit", action: "read" }
+  },
+  {
+    icon: Plug,
+    label: "Integracoes",
+    href: "/dashboard/integracoes",
+    permission: { resource: "integrations", action: "read" },
   },
 ];
 
