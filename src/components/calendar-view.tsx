@@ -6,7 +6,6 @@ import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { useOperations } from "@/hooks/use-operations";
 import { useEvents } from "@/hooks/use-events";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -43,6 +42,17 @@ const operationTypeColors = {
 const eventTypeColors = {
   UNICO: "#8B5CF6", // Roxo
   INTERMITENTE: "#EC4899", // Rosa
+};
+
+const operationTypeLabels = {
+  MOBILIZATION: "Mobilização",
+  CLEANING: "Limpeza",
+  DEMOBILIZATION: "Desmobilização",
+};
+
+const eventTypeLabels = {
+  UNICO: "Único",
+  INTERMITENTE: "Intermittente",
 };
 
 export function CalendarView() {
@@ -116,18 +126,7 @@ export function CalendarView() {
     }
 
     return events;
-  }, [operations, events, showOperations, showEvents, operationTypeFilter]);
-
-  const operationTypeLabels = {
-    MOBILIZATION: "Mobilização",
-    CLEANING: "Limpeza",
-    DEMOBILIZATION: "Desmobilização",
-  };
-
-  const eventTypeLabels = {
-    UNICO: "Único",
-    INTERMITENTE: "Intermittente",
-  };
+  }, [operations, showOperations, showEvents, operationTypeFilter]);
 
   // Componente para renderizar eventos no calendário
   const EventComponent = ({ event }: { event: CalendarEvent }) => {

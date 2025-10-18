@@ -22,7 +22,6 @@ import {
   UserCheck,
   Briefcase,
   Calendar,
-  Settings,
   Zap,
   CalendarDays,
 } from "lucide-react";
