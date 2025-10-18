@@ -4,10 +4,15 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
+import { TableShimmer } from "@/components/ui/shimmer";
+import { SearchInput } from "@/components/ui/search-input";
 import { PermissionGate } from "@/components/auth/permission-gate";
-import { Eye, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useCustomers } from "@/hooks/use-customers";
 import { usePagination } from "@/hooks/use-pagination";
+import { useDebounce } from "@/hooks/use-debounce";
+import { formatDocument } from "@/lib/utils";
 
 interface Customer {
   id: string;
@@ -30,27 +35,33 @@ interface Customer {
 
 export function CustomersList() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  
+  const { data: customersData, isLoading, error } = useCustomers({
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearchTerm,
+  });
+
+  const total = customersData?.total || 0;
   
   const pagination = usePagination({
-    initialPage: 1,
+    initialPage: currentPage,
     initialLimit: 10,
+    totalItems: total,
   });
-
-  const { data: customersData, isLoading, error } = useCustomers({
-    page: pagination.currentPage,
-    limit: pagination.limit,
-    search: searchTerm,
-  });
-
-  // Atualizar total de itens quando os dados chegarem
-  const total = customersData?.total || 0;
-  pagination.totalItems = total;
 
   const customers = customersData?.customers || [];
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    pagination.resetPage();
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   const handleSyncCustomers = async () => {
@@ -63,15 +74,45 @@ export function CustomersList() {
         throw new Error("Erro ao sincronizar clientes");
       }
 
-      // Refetch dos dados após sincronização
       window.location.reload();
     } catch (error) {
-      console.error("Erro ao sincronizar clientes:", error);
     }
   };
 
   if (isLoading) {
-    return <div className="text-center py-8">Carregando clientes...</div>;
+    return (
+      <div className="w-full space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Clientes</h1>
+            <p className="text-muted-foreground text-sm">
+              Gerencie os clientes do sistema e sincronize com integrações externas
+            </p>
+          </div>
+          <PermissionGate resource="customers" action="sync">
+            <Button onClick={handleSyncCustomers} variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Sincronizar
+            </Button>
+          </PermissionGate>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex-1 max-w-md">
+            <SearchInput
+              placeholder="Buscar clientes..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Carregando...
+          </div>
+        </div>
+
+        <TableShimmer rows={8} columns={7} />
+      </div>
+    );
   }
 
   if (error) {
@@ -101,12 +142,10 @@ export function CustomersList() {
 
       <div className="flex items-center gap-4">
         <div className="flex-1 max-w-md">
-          <input
-            type="text"
+          <SearchInput
             placeholder="Buscar clientes..."
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           />
         </div>
         <div className="text-sm text-muted-foreground">
@@ -114,9 +153,9 @@ export function CustomersList() {
         </div>
       </div>
 
-      {/* Tabela de Clientes */}
+      
       {customers.length === 0 ? (
-        <div className="text-center py-8">
+        <div className="rounded-lg border border-border bg-card p-8 text-center">
           <p className="text-muted-foreground">Nenhum cliente encontrado.</p>
         </div>
       ) : (
@@ -130,7 +169,6 @@ export function CustomersList() {
               <TableHead>Cidade/UF</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Sincronizado</TableHead>
-              <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -140,13 +178,13 @@ export function CustomersList() {
                   {customer.name || "Sem nome"}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="rounded-full">
                     {customer.person_type === "F" ? "Pessoa Física" : 
                      customer.person_type === "J" ? "Pessoa Jurídica" : 
                      customer.person_type || "Não informado"}
                   </Badge>
                 </TableCell>
-                <TableCell>{customer.document || "Sem documento"}</TableCell>
+                <TableCell>{formatDocument(customer.document) || "Sem documento"}</TableCell>
                 <TableCell>{customer.email || "Sem email"}</TableCell>
                 <TableCell>
                   {customer.city && customer.state 
@@ -155,7 +193,10 @@ export function CustomersList() {
                   }
                 </TableCell>
                 <TableCell>
-                  <Badge variant={customer.active ? "default" : "secondary"}>
+                  <Badge 
+                    variant={customer.active ? "default" : "secondary"}
+                    className="rounded-full"
+                  >
                     {customer.active ? "Ativo" : "Inativo"}
                   </Badge>
                 </TableCell>
@@ -165,45 +206,84 @@ export function CustomersList() {
                     : "Nunca"
                   }
                 </TableCell>
-                <TableCell>
-                  <PermissionGate resource="customers" action="read">
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </PermissionGate>
-                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       )}
 
-      {/* Paginação */}
+      
       {pagination.totalPages > 1 && (
-        <div className="flex justify-center">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => pagination.goToPreviousPage()}
-              disabled={!pagination.hasPreviousPage}
-            >
-              Anterior
-            </Button>
-            
-            <span className="text-sm text-muted-foreground">
-              Página {pagination.currentPage} de {pagination.totalPages} ({total} clientes)
-            </span>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => pagination.goToNextPage()}
-              disabled={!pagination.hasNextPage}
-            >
-              Próxima
-            </Button>
-          </div>
+        <div className="flex justify-center mt-6">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage > 1) {
+                      handlePageChange(currentPage - 1);
+                    }
+                  }}
+                  className={
+                    currentPage <= 1 ? "pointer-events-none opacity-50" : ""
+                  }
+                />
+              </PaginationItem>
+
+              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                let pageNumber;
+                if (pagination.totalPages <= 5) {
+                  pageNumber = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNumber = i + 1;
+                } else if (currentPage >= pagination.totalPages - 2) {
+                  pageNumber = pagination.totalPages - 4 + i;
+                } else {
+                  pageNumber = currentPage - 2 + i;
+                }
+
+                return (
+                  <PaginationItem key={pageNumber}>
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handlePageChange(pageNumber);
+                      }}
+                      isActive={currentPage === pageNumber}
+                    >
+                      {pageNumber}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+
+              {pagination.totalPages > 5 && currentPage < pagination.totalPages - 2 && (
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )}
+
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage < pagination.totalPages) {
+                      handlePageChange(currentPage + 1);
+                    }
+                  }}
+                  className={
+                    currentPage >= pagination.totalPages
+                      ? "pointer-events-none opacity-50"
+                      : ""
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
     </div>

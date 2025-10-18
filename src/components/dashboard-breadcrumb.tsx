@@ -30,6 +30,8 @@ const pathLabels: Record<string, string> = {
 export function DashboardBreadcrumb() {
   const pathname = usePathname();
   const pathSegments = pathname.split("/").filter(Boolean);
+  
+  const filteredSegments = pathSegments.filter(segment => segment !== "dashboard");
 
   return (
     <Breadcrumb>
@@ -43,9 +45,9 @@ export function DashboardBreadcrumb() {
           </BreadcrumbLink>
         </BreadcrumbItem>
 
-        {pathSegments.map((segment, index) => {
-          const isLast = index === pathSegments.length - 1;
-          const href = "/" + pathSegments.slice(0, index + 1).join("/");
+        {filteredSegments.map((segment, index) => {
+          const isLast = index === filteredSegments.length - 1;
+          const href = "/dashboard/" + filteredSegments.slice(0, index + 1).join("/");
           const label =
             pathLabels[segment] ||
             segment.charAt(0).toUpperCase() + segment.slice(1);

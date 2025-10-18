@@ -10,7 +10,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-// Create a singleton Supabase client for browser
 export const supabase = createBrowserClient<Database>(
   supabaseUrl,
   supabaseAnonKey

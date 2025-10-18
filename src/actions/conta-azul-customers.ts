@@ -7,23 +7,45 @@ import { CONTA_AZUL_PROVIDER } from "@/lib/integrations/conta-azul";
 import { findTenantIntegrationToken } from "@/lib/integrations/storage";
 import type { Database, Json } from "@/lib/supabase/database.types";
 
-const LOG_PREFIX = "[actions/conta-azul-customers]";
-
 type ContaAzulCustomerRow =
   Database["public"]["Tables"]["conta_azul_customers"]["Row"];
-
-function logDebug(message: string, meta?: Record<string, unknown>) {
-  if (process.env.NODE_ENV === "production") return;
-  if (meta && Object.keys(meta).length > 0) {
-    console.debug(`${LOG_PREFIX} ${message}`, meta);
-    return;
-  }
-  console.debug(`${LOG_PREFIX} ${message}`);
-}
 
 export interface SyncContaAzulCustomersResult {
   success: boolean;
   syncedCount: number;
+}
+
+export interface ContaAzulCustomer {
+  id: string;
+  name: string | null;
+  document: string | null;
+  email: string | null;
+  phone: string | null;
+}
+
+export async function getContaAzulCustomers(): Promise<ContaAzulCustomer[]> {
+  try {
+    const { supabase } = await getCurrentUserAndTenant();
+
+    const { data: customers, error } = await supabase
+      .from("conta_azul_customers")
+      .select("*")
+      .order("name");
+
+    if (error) {
+      return [];
+    }
+
+    return customers.map((customer) => ({
+      id: customer.id,
+      name: customer.name,
+      document: customer.document,
+      email: customer.email,
+      phone: customer.phone,
+    }));
+  } catch (error) {
+    return [];
+  }
 }
 
 export async function syncContaAzulCustomers(): Promise<SyncContaAzulCustomersResult> {
@@ -53,11 +75,6 @@ export async function syncContaAzulCustomers(): Promise<SyncContaAzulCustomersRe
       pageSize: 100,
       profile: "Cliente",
       maxPages: 50,
-    });
-
-    logDebug("Fetched Conta Azul customers", {
-      count: customers.length,
-      tenantId,
     });
 
     if (customers.length > 0) {
@@ -200,7 +217,6 @@ export async function syncContaAzulCustomers(): Promise<SyncContaAzulCustomersRe
         .eq("id", tokenRow.id);
     }
 
-    logDebug("Conta Azul customers sync failed", { message, tenantId });
     throw error;
   }
 }
@@ -258,4 +274,3 @@ export async function listContaAzulCustomers(
     limit,
   };
 }
-

@@ -42,13 +42,13 @@ export function RoleGate({
   requiredRole,
   fallback = null,
 }: RoleGateProps) {
-  const { role, loading, hasRole } = useAuth();
+  const { role, loading, requireRole } = useAuth();
 
   if ((loading && !role) || !role) {
     return <>{fallback}</>;
   }
 
-  if (!hasRole(requiredRole)) {
+  if (!requireRole(requiredRole)) {
     return <>{fallback}</>;
   }
 

@@ -99,9 +99,6 @@ describe("vehicleRegistrationSchema - Integração com Supabase", () => {
       expect(vehicleRegistrationSchema.safeParse(vehicle1).success).toBe(true);
       expect(vehicleRegistrationSchema.safeParse(vehicle2).success).toBe(true);
 
-      console.warn(
-        "WARNING: Duplicate plates pass Zod validation but may fail in Supabase!",
-      );
     });
 
     it("WARNING: Plate format - Zod accepts any string 7+, Supabase may have regex", () => {
@@ -115,9 +112,6 @@ describe("vehicleRegistrationSchema - Integração com Supabase", () => {
       const result = vehicleRegistrationSchema.safeParse(invalidFormatPlate);
       expect(result.success).toBe(true);
 
-      console.warn(
-        "WARNING: Invalid plate format passes Zod but may fail in Supabase!",
-      );
     });
 
     it("WARNING: Business validations - may have triggers in Supabase", () => {
@@ -133,9 +127,6 @@ describe("vehicleRegistrationSchema - Integração com Supabase", () => {
       const result = vehicleRegistrationSchema.safeParse(vehicle);
       expect(result.success).toBe(true);
 
-      console.warn(
-        "WARNING: Business rules may only be validated in Supabase!",
-      );
     });
 
     it("WARNING: Relationships - Zod does not validate foreign keys", () => {
@@ -149,9 +140,6 @@ describe("vehicleRegistrationSchema - Integração com Supabase", () => {
       const result = vehicleRegistrationSchema.safeParse(vehicle);
       expect(result.success).toBe(true);
 
-      console.warn(
-        "WARNING: Foreign keys are not validated by Zod, only by Supabase!",
-      );
     });
   });
 
@@ -167,22 +155,6 @@ describe("vehicleRegistrationSchema - Integração com Supabase", () => {
         rowLevelSecurity: false,
       };
 
-      console.log("Complete Validation Checklist:");
-      console.log("✅ Zod validation (frontend): COVERED by tests");
-      console.log("⚠️ Supabase constraints: NEEDS testing with real INSERT");
-      console.log(
-        "⚠️ Unique constraints: NEEDS testing duplicate plates",
-      );
-      console.log(
-        "⚠️ Foreign keys: NEEDS testing with invalid tenant IDs",
-      );
-      console.log(
-        "⚠️ CHECK constraints: NEEDS to verify database rules",
-      );
-      console.log(
-        "⚠️ Triggers: NEEDS to verify if there is logic in database",
-      );
-      console.log("⚠️ RLS: NEEDS to test permissions per user");
 
       expect(checklist.zodValidation).toBe(true);
     });

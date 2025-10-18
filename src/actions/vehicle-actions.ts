@@ -11,74 +11,73 @@ import type { Database } from "@/lib/supabase/database.types";
 type VehicleInsert = Database["public"]["Tables"]["vehicles"]["Insert"];
 
 export async function registerVehicle(formData: VehicleRegistrationData) {
-  const { user, tenantId, supabase } = await getCurrentUserAndTenant();
-  const validatedData = vehicleRegistrationSchema.parse(formData);
-
-  try {
-    const vehicleData: VehicleInsert = {
-      tenant_id: tenantId,
-      brand: validatedData.brand,
-      model: validatedData.model,
-      license_plate: validatedData.license_plate,
-      year: validatedData.year,
-      vehicle_type: validatedData.vehicle_type || null,
-      fuel_type: validatedData.fuel_type || null,
-      module_capacity: validatedData.module_capacity || null,
-      active: true,
-    };
-
-    const { data: vehicle, error: vehicleError } = await supabase
-      .from("vehicles")
-      .insert(vehicleData)
-      .select()
-      .single();
-
-    if (vehicleError) {
-      throw new Error(`Erro ao criar veículo: ${vehicleError.message}`);
-    }
-
-    await supabase.from("activity_logs").insert({
-      tenant_id: tenantId,
-      user_id: user.id,
-      action_type: "ASSIGN_VEHICLE",
-      entity_id: vehicle.id,
-      entity_type: "vehicle",
-      success: true,
-      metadata: {
-        license_plate: validatedData.license_plate,
+  const { withAuthAndValidation } = await import("@/lib/server-action-utils");
+  
+  return withAuthAndValidation(
+    vehicleRegistrationSchema,
+    formData,
+    async ({ user, tenantId, supabase }, validatedData) => {
+      const vehicleData: VehicleInsert = {
+        tenant_id: tenantId,
         brand: validatedData.brand,
         model: validatedData.model,
-      },
-    });
-  } catch (error) {
-    console.error("Erro ao registrar veículo:", error);
-    throw error;
-  }
+        license_plate: validatedData.license_plate,
+        year: validatedData.year,
+        vehicle_type: validatedData.vehicle_type || null,
+        fuel_type: validatedData.fuel_type || null,
+        module_capacity: validatedData.module_capacity || null,
+        active: true,
+      };
 
-  revalidatePath("/dashboard/veiculos");
-  return { success: true, message: "Veículo cadastrado com sucesso!" };
+      const { data: vehicle, error: vehicleError } = await supabase
+        .from("vehicles")
+        .insert(vehicleData)
+        .select()
+        .single();
+
+      if (vehicleError) {
+        throw new Error(`Erro ao criar veículo: ${vehicleError.message}`);
+      }
+
+      // Log da atividade
+      await supabase.from("activity_logs").insert({
+        tenant_id: tenantId,
+        user_id: user.id,
+        action_type: "ASSIGN_VEHICLE",
+        entity_id: vehicle.id,
+        entity_type: "vehicle",
+        success: true,
+        metadata: {
+          license_plate: validatedData.license_plate,
+          brand: validatedData.brand,
+          model: validatedData.model,
+        },
+      });
+
+      return { message: "Veículo cadastrado com sucesso!" };
+    },
+    {
+      revalidatePaths: ["/dashboard/veiculos"],
+      logAction: true,
+    }
+  );
 }
 
-export async function getVehicles(page: number = 1, limit: number = 12) {
+export async function getVehicles(page: number = 1, limit: number = 12, search?: string) {
   const { tenantId, supabase } = await getCurrentUserAndTenant();
 
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  const { count: totalCount, error: countError } = await supabase
+  let countQuery = supabase
     .from("vehicles")
     .select("*", { count: "exact", head: true })
     .eq("tenant_id", tenantId)
     .eq("active", true);
 
-  if (countError) {
-    console.error("Error counting vehicles:", countError);
-    return null;
-  }
-  const { data: vehicles, error } = await supabase
+  let dataQuery = supabase
     .from("vehicles")
-    .select(
-      `
+    .select(`
       id,
       brand,
       model,
@@ -89,15 +88,27 @@ export async function getVehicles(page: number = 1, limit: number = 12) {
       module_capacity,
       active,
       created_at
-    `,
-    )
+    `)
     .eq("tenant_id", tenantId)
     .eq("active", true)
     .order("brand")
     .range(from, to);
 
+  if (search && search.trim()) {
+    const searchTerm = `%${search.trim()}%`;
+    countQuery = countQuery.or(`brand.ilike.${searchTerm},model.ilike.${searchTerm},license_plate.ilike.${searchTerm}`);
+    dataQuery = dataQuery.or(`brand.ilike.${searchTerm},model.ilike.${searchTerm},license_plate.ilike.${searchTerm}`);
+  }
+
+  const { count: totalCount, error: countError } = await countQuery;
+
+  if (countError) {
+    return null;
+  }
+
+  const { data: vehicles, error } = await dataQuery;
+
   if (error) {
-    console.error("Error fetching vehicles:", error);
     return null;
   }
 

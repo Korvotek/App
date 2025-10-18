@@ -7,8 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
@@ -639,7 +637,9 @@ export type Database = {
       }
       events: {
         Row: {
+          client_document: string | null
           client_id: string | null
+          client_name: string | null
           created_at: string | null
           description: string | null
           end_datetime: string | null
@@ -654,7 +654,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          client_document?: string | null
           client_id?: string | null
+          client_name?: string | null
           created_at?: string | null
           description?: string | null
           end_datetime?: string | null
@@ -669,7 +671,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          client_document?: string | null
           client_id?: string | null
+          client_name?: string | null
           created_at?: string | null
           description?: string | null
           end_datetime?: string | null
@@ -688,7 +692,7 @@ export type Database = {
             foreignKeyName: "events_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "parties"
+            referencedRelation: "conta_azul_customers"
             referencedColumns: ["id"]
           },
           {

@@ -36,7 +36,6 @@ function buildRedirect(origin: string, target?: string | null) {
       const url = new URL(target, origin);
       return url.toString();
     } catch {
-      // fallback to default when provided redirect is malformed
     }
   }
   return new URL("/dashboard/integracoes", origin).toString();

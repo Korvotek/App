@@ -1,15 +1,4 @@
-const LOG_PREFIX = "[integrations/conta-azul/customers]";
-
 import { getContaAzulConfig } from "../conta-azul";
-
-function logDebug(message: string, meta?: Record<string, unknown>) {
-  if (process.env.NODE_ENV === "production") return;
-  if (meta && Object.keys(meta).length > 0) {
-    console.debug(`${LOG_PREFIX} ${message}`, meta);
-    return;
-  }
-  console.debug(`${LOG_PREFIX} ${message}`);
-}
 
 export interface ContaAzulCustomerAddress {
   bairro?: string | null;
@@ -80,13 +69,6 @@ export async function fetchContaAzulCustomers(
     endpoint.searchParams.set("busca", search.trim());
   }
 
-  logDebug("Fetching Conta Azul customers page", {
-    page,
-    pageSize,
-    profile,
-    includeAddress,
-  });
-
   const response = await fetch(endpoint, {
     method: "GET",
     headers: {
@@ -111,9 +93,6 @@ export async function fetchContaAzulCustomers(
   }
 
   if (!response.ok) {
-    logDebug("Conta Azul returned non-ok status", {
-      status: response.status,
-    });
     throw new Error(
       `Falha ao buscar clientes na Conta Azul (status ${response.status})`,
     );
@@ -175,12 +154,5 @@ export async function fetchAllContaAzulCustomers(
     page += 1;
   }
 
-  if (page > maxPages) {
-    logDebug("Reached max pages while fetching Conta Azul customers", {
-      maxPages,
-    });
-  }
-
   return items;
 }
-

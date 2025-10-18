@@ -4,7 +4,7 @@ import { getContaAzulConfig } from "@/lib/integrations/conta-azul";
 export async function POST(request: NextRequest) {
   try {
     const { code, redirectUri } = await request.json();
-    
+
     if (!code || !redirectUri) {
       return NextResponse.json({
         success: false,
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     const config = getContaAzulConfig();
-    
+
     const body = new URLSearchParams({
       grant_type: "authorization_code",
       code: code,
@@ -23,14 +23,6 @@ export async function POST(request: NextRequest) {
     const authHeader = Buffer.from(
       `${config.clientId}:${config.clientSecret}`,
     ).toString("base64");
-
-    console.log("Debug token exchange:", {
-      tokenUrl: config.tokenUrl,
-      clientId: config.clientId,
-      hasClientSecret: !!config.clientSecret,
-      authHeaderLength: authHeader.length,
-      body: body.toString()
-    });
 
     const response = await fetch(config.tokenUrl, {
       method: "POST",
@@ -45,11 +37,6 @@ export async function POST(request: NextRequest) {
     });
 
     const responseText = await response.text();
-    console.log("Token exchange response:", {
-      status: response.status,
-      statusText: response.statusText,
-      body: responseText
-    });
 
     return NextResponse.json({
       success: response.ok,
@@ -66,7 +53,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Debug token exchange error:", error);
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error"

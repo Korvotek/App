@@ -5,6 +5,7 @@ import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/hooks/use-auth";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { createServerClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/auth/permissions";
 
@@ -23,6 +24,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Sigelo",
   description: "Aplicação Sigelo construída com Next.js 15",
+  openGraph: {
+    title: "Sigelo",
+    description: "Aplicação Sigelo construída com Next.js 15",
+    type: "website",
+    locale: "pt_BR",
+  },
 };
 
 export default async function RootLayout({
@@ -91,18 +98,24 @@ export default async function RootLayout({
 
   return (
     <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider>
-          <AuthProvider
-            initialUser={user}
-            initialProfile={initialProfile}
-            initialRole={initialRole}
-            initialLoading={!user}
-          >
-            <QueryProvider>{children}</QueryProvider>
-          </AuthProvider>
+          <ErrorBoundary>
+            <AuthProvider
+              initialUser={user}
+              initialProfile={initialProfile}
+              initialRole={initialRole}
+              initialLoading={!user}
+            >
+              <QueryProvider>{children}</QueryProvider>
+            </AuthProvider>
+          </ErrorBoundary>
           <Toaster position="top-right" richColors />
         </ThemeProvider>
       </body>

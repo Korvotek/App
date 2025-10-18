@@ -13,21 +13,18 @@ export async function GET(request: NextRequest) {
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    // Construir query com filtros
     let query = supabase
       .from("conta_azul_customers")
       .select("*", { count: "exact" })
       .eq("tenant_id", tenantId)
       .order("synced_at", { ascending: false, nullsFirst: false });
 
-    // Adicionar filtro de busca se fornecido
     if (search) {
       query = query.or(
         `name.ilike.%${search}%,email.ilike.%${search}%,document.ilike.%${search}%`
       );
     }
 
-    // Executar query com paginação
     const { data: customers, error, count } = await query.range(from, to);
 
     if (error) {
@@ -44,7 +41,6 @@ export async function GET(request: NextRequest) {
       totalPages,
     });
   } catch (error) {
-    console.error("Erro ao buscar clientes:", error);
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }

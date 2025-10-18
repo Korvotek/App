@@ -13,7 +13,6 @@ export async function getUsersForFilter() {
     .order("full_name");
 
   if (error) {
-    console.error("Error fetching users for filter:", error);
     return null;
   }
 
@@ -75,14 +74,12 @@ export async function getActivityLogs(
     .eq("tenant_id", tenantId);
 
   if (countError) {
-    console.error("Error counting activity logs:", countError);
     return null;
   }
 
   const { data: logs, error } = await query.range(from, to);
 
   if (error) {
-    console.error("Error fetching activity logs:", error);
     return null;
   }
 
@@ -105,12 +102,11 @@ export async function getActivityStats() {
     .gte("timestamp", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
   if (error) {
-        console.error("Error fetching activity stats:", error);
         return null;
     }
 
   const totalActions = stats?.length || 0;
-  const successfulActions = stats?.filter(log => log.success).length || 0;
+  const successfulActions = stats?.filter(log => log.success === true).length || 0;
   const failedActions = totalActions - successfulActions;
 
   const actionTypes = stats?.reduce((acc, log) => {

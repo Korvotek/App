@@ -7,23 +7,45 @@ import { CONTA_AZUL_PROVIDER } from "@/lib/integrations/conta-azul";
 import { findTenantIntegrationToken } from "@/lib/integrations/storage";
 import type { Database, Json } from "@/lib/supabase/database.types";
 
-const LOG_PREFIX = "[actions/conta-azul-services]";
-
 type ContaAzulServiceRow =
   Database["public"]["Tables"]["conta_azul_services"]["Row"];
-
-function logDebug(message: string, meta?: Record<string, unknown>) {
-  if (process.env.NODE_ENV === "production") return;
-  if (meta && Object.keys(meta).length > 0) {
-    console.debug(`${LOG_PREFIX} ${message}`, meta);
-    return;
-  }
-  console.debug(`${LOG_PREFIX} ${message}`);
-}
 
 export interface SyncContaAzulServicesResult {
   success: boolean;
   syncedCount: number;
+}
+
+export interface ContaAzulService {
+  id: string;
+  code?: string | null;
+  description?: string | null;
+  cost?: number | null;
+  external_code?: string | null;
+}
+
+export async function getContaAzulServices(): Promise<ContaAzulService[]> {
+  try {
+    const { supabase } = await getCurrentUserAndTenant();
+
+    const { data: services, error } = await supabase
+      .from("conta_azul_services")
+      .select("*")
+      .order("description");
+
+    if (error) {
+      return [];
+    }
+
+    return services.map((service) => ({
+      id: service.id,
+      code: service.code,
+      description: service.description,
+      cost: service.cost,
+      external_code: service.external_code,
+    }));
+  } catch (error) {
+    return [];
+  }
 }
 
 export async function syncContaAzulServices(): Promise<SyncContaAzulServicesResult> {
@@ -52,11 +74,6 @@ export async function syncContaAzulServices(): Promise<SyncContaAzulServicesResu
       pageSize: 100,
       maxPages: 100,
       serviceTypeFilter: "PRESTADO",
-    });
-
-    logDebug("Fetched Conta Azul services", {
-      count: services.length,
-      tenantId,
     });
 
     if (services.length > 0) {
@@ -186,7 +203,6 @@ export async function syncContaAzulServices(): Promise<SyncContaAzulServicesResu
         .eq("id", tokenRow.id);
     }
 
-    logDebug("Conta Azul services sync failed", { message, tenantId });
     throw error;
   }
 }

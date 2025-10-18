@@ -1,15 +1,4 @@
-const LOG_PREFIX = "[integrations/conta-azul/services]";
-
 import { getContaAzulConfig } from "../conta-azul";
-
-function logDebug(message: string, meta?: Record<string, unknown>) {
-  if (process.env.NODE_ENV === "production") return;
-  if (meta && Object.keys(meta).length > 0) {
-    console.debug(`${LOG_PREFIX} ${message}`, meta);
-    return;
-  }
-  console.debug(`${LOG_PREFIX} ${message}`);
-}
 
 export interface ContaAzulService {
   id: string;
@@ -65,12 +54,6 @@ export async function fetchContaAzulServices(
     endpoint.searchParams.set("busca_textual", search.trim());
   }
 
-  logDebug("Fetching Conta Azul services page", {
-    page,
-    pageSize,
-    hasSearch: Boolean(search),
-  });
-
   const response = await fetch(endpoint, {
     method: "GET",
     headers: {
@@ -95,9 +78,6 @@ export async function fetchContaAzulServices(
   }
 
   if (!response.ok) {
-    logDebug("Conta Azul returned non-ok status for services", {
-      status: response.status,
-    });
     throw new Error(
       `Falha ao buscar serviços na Conta Azul (status ${response.status})`,
     );
@@ -182,12 +162,6 @@ export async function fetchAllContaAzulServices(
     }
 
     page += 1;
-  }
-
-  if (page > maxPages) {
-    logDebug("Reached max pages while fetching Conta Azul services", {
-      maxPages,
-    });
   }
 
   return items;

@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Pagination,
   PaginationContent,
@@ -19,11 +20,15 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
+import { TableShimmer } from "@/components/ui/shimmer";
+import { SearchInput } from "@/components/ui/search-input";
 import { PermissionGate } from "@/components/auth/permission-gate";
 import Link from "next/link";
 import { Plus, Edit, Eye, Users } from "lucide-react";
 import { useWorkers } from "@/hooks/use-workers";
 import { usePagination } from "@/hooks/use-pagination";
+import { useDebounce } from "@/hooks/use-debounce";
+import { formatDocument } from "@/lib/utils";
 
 type Worker = {
   id: string;
@@ -46,31 +51,34 @@ type Worker = {
 
 export function WorkersList() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  
+  const { data: workersData, isLoading, error } = useWorkers({
+    page: currentPage,
+    limit: 12,
+    search: debouncedSearchTerm.trim() || undefined,
+  });
+
+  const total = workersData?.totalCount || 0;
   
   const pagination = usePagination({
-    initialPage: 1,
+    initialPage: currentPage,
     initialLimit: 12,
+    totalItems: total,
   });
-
-  const { data: workersData, isLoading, error } = useWorkers({
-    page: pagination.currentPage,
-    limit: pagination.limit,
-  });
-
-  // Atualizar total de itens quando os dados chegarem
-  const totalCount = workersData?.totalCount || 0;
-  pagination.totalItems = totalCount;
 
   const workers = workersData?.workers || [];
 
-  const filteredWorkers = workers.filter(
-    (worker) =>
-      worker.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      worker.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      worker.party_employees[0]?.employee_number
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()),
-  );
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const getPrimaryContact = (contacts: Worker["party_contacts"]) => {
     const primaryContact = contacts.find((contact) => contact.is_primary);
@@ -86,13 +94,38 @@ export function WorkersList() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">
-            Carregando funcionários...
-          </p>
+      <div className="w-full space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Funcionários</h1>
+            <p className="text-muted-foreground text-sm">
+              Gerencie os funcionários da empresa
+            </p>
+          </div>
+          <PermissionGate resource="employees" action="create">
+            <Link href="/dashboard/funcionarios/cadastrar">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Funcionário
+              </Button>
+            </Link>
+          </PermissionGate>
         </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex-1 max-w-md">
+            <SearchInput
+              placeholder="Buscar funcionários..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Carregando...
+          </div>
+        </div>
+
+        <TableShimmer rows={6} columns={8} />
       </div>
     );
   }
@@ -126,146 +159,127 @@ export function WorkersList() {
 
       <div className="flex items-center gap-4">
         <div className="flex-1 max-w-md">
-          <input
-            type="text"
+          <SearchInput
             placeholder="Buscar funcionários..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            onChange={(e) => handleSearch(e.target.value)}
           />
         </div>
         <div className="text-sm text-muted-foreground">
-          {totalCount} funcionários total
+          {total} funcionários total
         </div>
       </div>
 
-      {filteredWorkers.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <div className="text-center">
-              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">
-                {searchTerm
-                  ? "Nenhum funcionário encontrado"
-                  : "Nenhum funcionário cadastrado"}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm
-                  ? "Tente ajustar os termos de busca"
-                  : "Comece cadastrando o primeiro funcionário"}
-              </p>
-              {!searchTerm && (
-                <Link href="/dashboard/funcionarios/cadastrar">
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Cadastrar Funcionário
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-          {filteredWorkers.map((worker) => {
-            const employee = worker.party_employees[0];
-            const primaryContact = getPrimaryContact(worker.party_contacts);
-            const roles = getWorkerRoles(employee);
-
-            return (
-              <Card
-                key={worker.id}
-                className="hover:shadow-md transition-shadow"
-              >
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">
-                        {worker.display_name}
-                      </CardTitle>
-                      <CardDescription>{worker.full_name}</CardDescription>
-                    </div>
-                    <Badge variant={worker.active ? "default" : "secondary"}>
-                      {worker.active ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="space-y-2">
-                    <div className="text-sm">
-                      <span className="font-medium">Funcionário:</span>{" "}
-                      {employee.employee_number}
-                    </div>
-                    <div className="text-sm">
-                      <span className="font-medium">CPF:</span>{" "}
-                      {worker.cpf || "Não informado"}
-                    </div>
-                    <div className="text-sm">
-                      <span className="font-medium">Contato:</span>{" "}
-                      {primaryContact?.contact_value || "Não informado"}
-                    </div>
-                    <div className="text-sm">
-                      <span className="font-medium">Admissão:</span>{" "}
-                      {employee.hire_date
-                        ? new Date(employee.hire_date).toLocaleDateString(
-                            "pt-BR",
-                          )
-                        : "Não informada"}
-                    </div>
-                    {roles.length > 0 && (
-                      <div className="text-sm">
-                        <span className="font-medium">Funções:</span>
-                        <div className="flex gap-1 mt-1">
-                          {roles.map((role) => (
-                            <Badge
-                              key={role}
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              {role}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    <PermissionGate resource="employees" action="read">
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Eye className="h-4 w-4 mr-1" />
-                        Ver
-                      </Button>
-                    </PermissionGate>
-                    <PermissionGate resource="employees" action="update">
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Edit className="h-4 w-4 mr-1" />
-                        Editar
-                      </Button>
-                    </PermissionGate>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+      
+      {workers.length === 0 ? (
+        <div className="rounded-lg border border-border bg-card p-8 text-center">
+          <div className="text-center">
+            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">
+              {searchTerm
+                ? "Nenhum funcionário encontrado"
+                : "Nenhum funcionário cadastrado"}
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              {searchTerm
+                ? "Tente ajustar os termos de busca"
+                : "Comece cadastrando o primeiro funcionário"}
+            </p>
+            {!searchTerm && (
+              <Link href="/dashboard/funcionarios/cadastrar">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Cadastrar Funcionário
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Nome Completo</TableHead>
+              <TableHead>CPF</TableHead>
+              <TableHead>Funcionário</TableHead>
+              <TableHead>Contato</TableHead>
+              <TableHead>Admissão</TableHead>
+              <TableHead>Funções</TableHead>
+              <TableHead className="w-[100px]">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {workers.map((worker) => {
+              const employee = worker.party_employees[0];
+              const primaryContact = getPrimaryContact(worker.party_contacts);
+              const roles = getWorkerRoles(employee);
+
+              return (
+                <TableRow key={worker.id}>
+                  <TableCell className="font-medium">
+                    {worker.display_name}
+                  </TableCell>
+                  <TableCell>{worker.full_name || "Não informado"}</TableCell>
+                  <TableCell>{formatDocument(worker.cpf) || "Não informado"}</TableCell>
+                  <TableCell>{employee.employee_number}</TableCell>
+                  <TableCell>{primaryContact?.contact_value || "Não informado"}</TableCell>
+                  <TableCell>
+                    {employee.hire_date
+                      ? new Date(employee.hire_date).toLocaleDateString("pt-BR")
+                      : "Não informada"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      {roles.map((role) => (
+                        <Badge
+                          key={role}
+                          variant="outline"
+                          className="text-xs"
+                        >
+                          {role}
+                        </Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <PermissionGate resource="employees" action="read">
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ver
+                        </Button>
+                      </PermissionGate>
+                      <PermissionGate resource="employees" action="update">
+                        <Button variant="outline" size="sm">
+                          <Edit className="h-4 w-4 mr-1" />
+                          Editar
+                        </Button>
+                      </PermissionGate>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       )}
 
+      
       {pagination.totalPages > 1 && (
-        <div className="flex justify-center mt-8">
+        <div className="flex justify-center mt-6">
           <Pagination>
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
                   href="#"
-                  size="default"
                   onClick={(e) => {
                     e.preventDefault();
-                    pagination.goToPreviousPage();
+                    if (currentPage > 1) {
+                      handlePageChange(currentPage - 1);
+                    }
                   }}
-                  className={
-                    !pagination.hasPreviousPage ? "pointer-events-none opacity-50" : ""
-                  }
+                  className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
 
@@ -273,24 +287,23 @@ export function WorkersList() {
                 let pageNumber;
                 if (pagination.totalPages <= 5) {
                   pageNumber = i + 1;
-                } else if (pagination.currentPage <= 3) {
+                } else if (currentPage <= 3) {
                   pageNumber = i + 1;
-                } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                } else if (currentPage >= pagination.totalPages - 2) {
                   pageNumber = pagination.totalPages - 4 + i;
                 } else {
-                  pageNumber = pagination.currentPage - 2 + i;
+                  pageNumber = currentPage - 2 + i;
                 }
 
                 return (
                   <PaginationItem key={pageNumber}>
                     <PaginationLink
                       href="#"
-                      size="icon"
                       onClick={(e) => {
                         e.preventDefault();
-                        pagination.goToPage(pageNumber);
+                        handlePageChange(pageNumber);
                       }}
-                      isActive={pagination.currentPage === pageNumber}
+                      isActive={currentPage === pageNumber}
                     >
                       {pageNumber}
                     </PaginationLink>
@@ -298,7 +311,7 @@ export function WorkersList() {
                 );
               })}
 
-              {pagination.totalPages > 5 && pagination.currentPage < pagination.totalPages - 2 && (
+              {pagination.totalPages > 5 && currentPage < pagination.totalPages - 2 && (
                 <PaginationItem>
                   <PaginationEllipsis />
                 </PaginationItem>
@@ -307,16 +320,13 @@ export function WorkersList() {
               <PaginationItem>
                 <PaginationNext
                   href="#"
-                  size="default"
                   onClick={(e) => {
                     e.preventDefault();
-                    pagination.goToNextPage();
+                    if (currentPage < pagination.totalPages) {
+                      handlePageChange(currentPage + 1);
+                    }
                   }}
-                  className={
-                    !pagination.hasNextPage
-                      ? "pointer-events-none opacity-50"
-                      : ""
-                  }
+                  className={currentPage >= pagination.totalPages ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
             </PaginationContent>

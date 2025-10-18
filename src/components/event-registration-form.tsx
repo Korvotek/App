@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Save, Plus, X } from "lucide-react";
+// Removidos ícones: ArrowLeft, Save, Plus, X
 import { toast } from "sonner";
 import { createEvent, getContaAzulServices, getContaAzulCustomers } from "@/actions/event-actions";
 import { calcularMOLIDEEvento, gerarResumoEstatistico } from "@/lib/molide/event-calculator";
@@ -369,7 +369,6 @@ export function EventRegistrationForm() {
             size="sm"
             onClick={() => router.back()}
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>
           <div>
@@ -387,7 +386,6 @@ export function EventRegistrationForm() {
             onClick={fillTestData}
             disabled={customers.length === 0 || services.length === 0}
           >
-            <Plus className="h-4 w-4 mr-2" />
             Preencher Dados de Teste
           </Button>
         </div>
@@ -605,7 +603,6 @@ export function EventRegistrationForm() {
                   size="sm"
                   onClick={addService}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
                   Adicionar Serviço
                 </Button>
                 <Button
@@ -615,7 +612,6 @@ export function EventRegistrationForm() {
                   onClick={calculateMolideServices}
                   disabled={!formData.mobilization_date || !formData.mobilization_time || !formData.demobilization_date || !formData.demobilization_time || !formData.event_type || !formData.cleaning_time}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
                   Calcular Automático
                 </Button>
               </div>
@@ -631,7 +627,7 @@ export function EventRegistrationForm() {
                     size="sm"
                     onClick={() => removeService(index)}
                   >
-                    <X className="h-4 w-4" />
+                    Remover
                   </Button>
                 </div>
 
@@ -827,7 +823,6 @@ export function EventRegistrationForm() {
             type="submit"
             disabled={isLoading}
           >
-            <Save className="h-4 w-4 mr-2" />
             {isLoading ? "Salvando..." : "Salvar Evento"}
           </Button>
         </div>

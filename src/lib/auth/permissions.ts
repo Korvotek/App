@@ -13,6 +13,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: "vehicles", actions: ["read", "create", "update", "delete"] },
     { resource: "customers", actions: ["read", "create", "update", "delete", "sync"] },
     { resource: "services", actions: ["read", "create", "update", "delete", "sync"] },
+    { resource: "events", actions: ["read", "create", "update", "delete"] },
     { resource: "dashboard", actions: ["read"] },
     { resource: "integrations", actions: ["read", "manage"] },
   ],
@@ -21,6 +22,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: "vehicles", actions: ["read", "create", "update", "delete"] },
     { resource: "customers", actions: ["read", "create", "update", "delete", "sync"] },
     { resource: "services", actions: ["read", "update", "sync"] },
+    { resource: "events", actions: ["read", "create", "update", "delete"] },
     { resource: "dashboard", actions: ["read"] },
     { resource: "integrations", actions: ["read"] },
   ],
@@ -29,6 +31,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: "vehicles", actions: ["read"] },
     { resource: "customers", actions: ["read"] },
     { resource: "services", actions: ["read"] },
+    { resource: "events", actions: ["read"] },
     { resource: "dashboard", actions: ["read"] },
   ],
 };
@@ -67,8 +70,6 @@ export function canAccessRoute(
   userRole: UserRole | null,
   route: string,
 ): boolean {
-  console.log(`[permissions] canAccessRoute called: role=${userRole}, route=${route}`);
-
   const routePermissions: Record<string, { resource: string; action: string }> =
     {
       "/dashboard/usuarios": { resource: "users", action: "read" },
@@ -77,25 +78,21 @@ export function canAccessRoute(
       "/dashboard/servicos": { resource: "services", action: "read" },
       "/dashboard/funcionarios": { resource: "employees", action: "read" },
       "/dashboard/veiculos": { resource: "vehicles", action: "read" },
+      "/dashboard/eventos": { resource: "events", action: "read" },
+      "/dashboard/operacoes": { resource: "events", action: "read" },
       "/dashboard": { resource: "dashboard", action: "read" },
       "/dashboard/integracoes": { resource: "integrations", action: "read" },
     };
 
   const permission = routePermissions[route];
   if (!permission) {
-    console.log(
-      `[permissions] No specific permission for route ${route}, allowing access`,
-    );
-    return true; // Rotas nao listadas sao publicas
+    return true;
   }
 
   const hasAccess = hasPermission(
     userRole,
     permission.resource,
     permission.action,
-  );
-  console.log(
-    `[permissions] Route ${route} requires ${permission.resource}:${permission.action}, hasAccess=${hasAccess}`,
   );
 
   return hasAccess;

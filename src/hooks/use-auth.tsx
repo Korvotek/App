@@ -81,8 +81,32 @@ async function fetchUserProfile(user: User): Promise<UserProfile | null> {
     if (userData) {
       return userData as UserProfile;
     }
+
+    // Se não existe, criar o usuário
+    const { data: newUser, error: createError } = await supabase
+      .from("users")
+      .insert({
+        id: user.id,
+        email: user.email!,
+        full_name: user.user_metadata?.full_name || null,
+        picture_url: user.user_metadata?.picture || null,
+        role: (user.user_metadata?.role as UserRole) || null,
+        tenant_id: user.user_metadata?.tenant_id || null,
+        active: true,
+        created_at: new Date().toISOString(),
+        last_login_at: new Date().toISOString(),
+        last_activity_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.error("Erro ao criar usuário:", createError);
+      return null;
+    }
+
+    return newUser as UserProfile;
   } catch (error) {
-    console.error("Error fetching user profile:", error);
   }
 
   return null;
@@ -165,7 +189,6 @@ export function AuthProvider({
           };
         });
       } catch (err) {
-        console.error("Error during authentication:", err);
         if (!isMounted) return;
         setState({
           user: null,
@@ -233,7 +256,6 @@ export function AuthProvider({
           };
         });
       } catch (err) {
-        console.error("Error during auth state change:", err);
         if (!isMounted) return;
         setState({
           user: null,
@@ -283,7 +305,6 @@ export function AuthProvider({
       try {
         await auth.signOut();
       } catch (error) {
-        console.error("Error during sign out:", error);
       } finally {
         setState({
           user: null,

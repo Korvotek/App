@@ -112,7 +112,6 @@ export async function registerWorker(formData: WorkerRegistrationData) {
       },
     });
   } catch (error) {
-    console.error("Erro ao registrar funcionário:", error);
     throw error;
   }
 
@@ -120,27 +119,22 @@ export async function registerWorker(formData: WorkerRegistrationData) {
   return { success: true, message: "Funcionário cadastrado com sucesso!" };
 }
 
-export async function getWorkers(page: number = 1, limit: number = 12) {
+export async function getWorkers(page: number = 1, limit: number = 12, search?: string) {
   const { tenantId, supabase } = await getCurrentUserAndTenant();
 
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  const { count: totalCount, error: countError } = await supabase
+  let countQuery = supabase
     .from("parties")
     .select("*", { count: "exact", head: true })
     .eq("tenant_id", tenantId)
     .eq("party_type", "EMPLOYEE")
     .eq("active", true);
 
-  if (countError) {
-    console.error("Error counting workers:", countError);
-    return null;
-  }
-  const { data: workers, error } = await supabase
+  let dataQuery = supabase
     .from("parties")
-    .select(
-      `
+    .select(`
       id,
       display_name,
       full_name,
@@ -157,16 +151,28 @@ export async function getWorkers(page: number = 1, limit: number = 12) {
         contact_value,
         is_primary
       )
-    `,
-    )
+    `)
     .eq("tenant_id", tenantId)
     .eq("party_type", "EMPLOYEE")
     .eq("active", true)
     .order("display_name")
     .range(from, to);
 
+  if (search && search.trim()) {
+    const searchTerm = `%${search.trim()}%`;
+    countQuery = countQuery.or(`display_name.ilike.${searchTerm},full_name.ilike.${searchTerm},cpf.ilike.${searchTerm}`);
+    dataQuery = dataQuery.or(`display_name.ilike.${searchTerm},full_name.ilike.${searchTerm},cpf.ilike.${searchTerm}`);
+  }
+
+  const { count: totalCount, error: countError } = await countQuery;
+
+  if (countError) {
+    return null;
+  }
+
+  const { data: workers, error } = await dataQuery;
+
   if (error) {
-    console.error("Error fetching workers:", error);
     return null;
   }
 

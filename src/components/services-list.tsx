@@ -11,8 +11,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+import { TableShimmer } from "@/components/ui/shimmer";
+import { SearchInput } from "@/components/ui/search-input";
 import { PermissionGate } from "@/components/auth/permission-gate";
-import { Eye, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import {
   listContaAzulServices,
   syncContaAzulServices,
@@ -68,7 +79,6 @@ export function ServicesList() {
         setTotalPages(data.totalPages);
       } catch (error) {
         if (isMounted) {
-          console.error("Erro ao carregar serviços:", error);
         }
       } finally {
         if (isMounted) {
@@ -111,13 +121,46 @@ export function ServicesList() {
         await syncContaAzulServices();
         await refreshTable(currentPage, searchTerm);
       } catch (error) {
-        console.error("Erro ao sincronizar serviços:", error);
       }
     });
   };
 
   if (loading) {
-    return <div className="py-8 text-center">Carregando serviços...</div>;
+    return (
+      <div className="w-full space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Serviços</h1>
+            <p className="text-muted-foreground text-sm">
+              Consulte e mantenha os serviços sincronizados com o Conta Azul
+            </p>
+          </div>
+          <PermissionGate resource="services" action="sync">
+            <Button onClick={handleSyncServices} variant="outline">
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`}
+              />
+              {isSyncing ? "Sincronizando..." : "Sincronizar"}
+            </Button>
+          </PermissionGate>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex-1 max-w-md">
+            <SearchInput
+              placeholder="Buscar serviços..."
+              value={searchTerm}
+              onChange={(event) => handleSearchChange(event.target.value)}
+            />
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Carregando serviços...
+          </div>
+        </div>
+
+        <TableShimmer rows={6} columns={7} />
+      </div>
+    );
   }
 
   return (
@@ -141,12 +184,10 @@ export function ServicesList() {
 
       <div className="flex items-center gap-4">
         <div className="flex-1 max-w-md">
-          <input
-            type="text"
+          <SearchInput
             placeholder="Buscar serviços..."
             value={searchTerm}
             onChange={(event) => handleSearchChange(event.target.value)}
-            className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           />
         </div>
         <div className="text-sm text-muted-foreground">
@@ -155,8 +196,8 @@ export function ServicesList() {
       </div>
 
       {services.length === 0 ? (
-        <div className="py-8 text-center text-muted-foreground">
-          Nenhum serviço encontrado.
+        <div className="rounded-lg border border-border bg-card p-8 text-center">
+          <p className="text-muted-foreground">Nenhum serviço encontrado.</p>
         </div>
       ) : (
         <Table>
@@ -169,7 +210,6 @@ export function ServicesList() {
               <TableHead>Preço</TableHead>
               <TableHead>Custo</TableHead>
               <TableHead>Última sincronização</TableHead>
-              <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -180,7 +220,7 @@ export function ServicesList() {
                 </TableCell>
                 <TableCell>{service.code || service.external_code || "—"}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="rounded-full">
                     {service.service_type ?? "Não informado"}
                   </Badge>
                 </TableCell>
@@ -191,6 +231,7 @@ export function ServicesList() {
                         ? "default"
                         : "secondary"
                     }
+                    className="rounded-full"
                   >
                     {service.status ?? "Indefinido"}
                   </Badge>
@@ -216,13 +257,6 @@ export function ServicesList() {
                     ? new Date(service.synced_at).toLocaleString("pt-BR")
                     : "Nunca"}
                 </TableCell>
-                <TableCell>
-                  <PermissionGate resource="services" action="read">
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </PermissionGate>
-                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -230,28 +264,72 @@ export function ServicesList() {
       )}
 
       {totalPages > 1 && (
-        <div className="flex justify-center">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1 || isSyncing}
-            >
-              Anterior
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              Página {currentPage} de {totalPages} ({totalCount} serviços)
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages || isSyncing}
-            >
-              Próxima
-            </Button>
-          </div>
+        <div className="flex justify-center mt-6">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handlePageChange(currentPage - 1);
+                  }}
+                  className={
+                    currentPage === 1 || isSyncing ? "pointer-events-none opacity-50" : ""
+                  }
+                />
+              </PaginationItem>
+
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNumber;
+                if (totalPages <= 5) {
+                  pageNumber = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNumber = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNumber = totalPages - 4 + i;
+                } else {
+                  pageNumber = currentPage - 2 + i;
+                }
+
+                return (
+                  <PaginationItem key={pageNumber}>
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handlePageChange(pageNumber);
+                      }}
+                      isActive={currentPage === pageNumber}
+                    >
+                      {pageNumber}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+
+              {totalPages > 5 && currentPage < totalPages - 2 && (
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )}
+
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handlePageChange(currentPage + 1);
+                  }}
+                  className={
+                    currentPage === totalPages || isSyncing
+                      ? "pointer-events-none opacity-50"
+                      : ""
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
     </div>

@@ -3,7 +3,11 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Permitir acesso a arquivos estáticos e APIs
+  // Permitir acesso a páginas de debug e teste
+  if (pathname.startsWith("/debug-") || pathname.startsWith("/test-")) {
+    return NextResponse.next();
+  }
+
   if (
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/api/") ||
@@ -13,10 +17,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Middleware simplificado - deixar o useAuth fazer o controle de acesso
-  // Apenas redirecionar de /login para /dashboard se já autenticado
   if (pathname.startsWith("/login")) {
-    // Verificar se há qualquer cookie do Supabase
     const hasSupabaseCookie = Array.from(request.cookies.getAll()).some(cookie => 
       cookie.name.includes('supabase') || 
       cookie.name.includes('sb-') ||

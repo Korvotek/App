@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -12,56 +12,42 @@ import { TableShimmer } from "@/components/ui/shimmer";
 import { SearchInput } from "@/components/ui/search-input";
 import { PermissionGate } from "@/components/auth/permission-gate";
 import { Plus, Calendar } from "lucide-react";
-import { getEvents, type EventsResponse } from "@/actions/event-actions";
 import { EVENT_TYPE_LABELS, EVENT_STATUS_LABELS } from "@/lib/validations/event-schema";
 import { usePagination } from "@/hooks/use-pagination";
+import { useEvents } from "@/hooks/use-events";
 import { formatDocument } from "@/lib/utils";
-
-type Event = EventsResponse['events'][0];
 
 export function EventsList() {
   const router = useRouter();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [eventTypeFilter, setEventTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [totalItems, setTotalItems] = useState(0);
 
   const pagination = usePagination({
     initialPage: 1,
     initialLimit: 12,
-    totalItems: totalItems,
+    totalItems: 0,
   });
 
-  const loadEvents = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const filters = {
-        search: searchTerm || undefined,
-        eventType: eventTypeFilter !== "all" ? eventTypeFilter as "UNICO" | "INTERMITENTE" : undefined,
-        status: statusFilter !== "all" ? statusFilter as "DRAFT" | "CONFIRMED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" : undefined,
-      };
+  const filters = {
+    search: searchTerm || undefined,
+    eventType: eventTypeFilter !== "all" ? eventTypeFilter as "UNICO" | "INTERMITENTE" : undefined,
+    status: statusFilter !== "all" ? statusFilter as "DRAFT" | "CONFIRMED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" : undefined,
+  };
 
-      const response: EventsResponse = await getEvents(
-        pagination.currentPage,
-        pagination.limit,
-        filters
-      );
+  const { data: eventsData, isLoading, error } = useEvents({
+    page: pagination.currentPage,
+    limit: pagination.limit,
+    filters,
+  });
 
-      setEvents(response.events);
-      setTotalItems(response.totalCount);
-    } catch (err) {
-      setError("Erro ao carregar eventos");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [pagination.currentPage, pagination.limit, searchTerm, eventTypeFilter, statusFilter]);
+  const events = eventsData?.events || [];
+  const totalItems = eventsData?.totalCount || 0;
 
-  useEffect(() => {
-    loadEvents();
-  }, [loadEvents]);
+  // Atualizar totalItems no pagination quando os dados mudarem
+  React.useEffect(() => {
+    pagination.setTotalItems(totalItems);
+  }, [totalItems]);
 
   const filteredEvents = events.filter((event) =>
     event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -148,7 +134,7 @@ export function EventsList() {
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-500">{error.message || "Erro ao carregar eventos"}</p>
       </div>
     );
   }
@@ -209,7 +195,7 @@ export function EventsList() {
         </Select>
 
         <div className="text-sm text-muted-foreground">
-          {pagination.totalItems} eventos total
+          {totalItems} eventos total
         </div>
       </div>
 

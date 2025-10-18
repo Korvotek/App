@@ -22,7 +22,6 @@ export function SignOutButton({ className, children }: SignOutButtonProps) {
       router.push("/");
       router.refresh();
     } catch (error) {
-      console.error("Error signing out:", error);
       toast.error("Erro ao fazer logout. Tente novamente.");
     } finally {
       setIsLoading(false);

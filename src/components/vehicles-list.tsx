@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Pagination,
   PaginationContent,
@@ -19,37 +20,45 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
+import { TableShimmer } from "@/components/ui/shimmer";
+import { SearchInput } from "@/components/ui/search-input";
 import { PermissionGate } from "@/components/auth/permission-gate";
 import Link from "next/link";
 import { Plus, Edit, Eye, Car } from "lucide-react";
 import { useVehicles } from "@/hooks/use-vehicles";
 import { usePagination } from "@/hooks/use-pagination";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export function VehiclesList() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  
+  const { data: vehiclesData, isLoading, error } = useVehicles({
+    page: currentPage,
+    limit: 12,
+    search: debouncedSearchTerm.trim() || undefined,
+  });
+
+  const total = vehiclesData?.totalCount || 0;
   
   const pagination = usePagination({
-    initialPage: 1,
+    initialPage: currentPage,
     initialLimit: 12,
+    totalItems: total,
   });
-
-  const { data: vehiclesData, isLoading, error } = useVehicles({
-    page: pagination.currentPage,
-    limit: pagination.limit,
-  });
-
-  // Atualizar total de itens quando os dados chegarem
-  const totalCount = vehiclesData?.totalCount || 0;
-  pagination.totalItems = totalCount;
 
   const vehicles = vehiclesData?.vehicles || [];
 
-  const filteredVehicles = vehicles.filter(
-    (vehicle) =>
-      vehicle.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vehicle.license_plate.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const getVehicleTypeLabel = (type: string | null) => {
     switch (type) {
@@ -75,11 +84,38 @@ export function VehiclesList() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Carregando veículos...</p>
+      <div className="w-full space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Veículos</h1>
+            <p className="text-muted-foreground text-sm">
+              Gerencie a frota de veículos da empresa
+            </p>
+          </div>
+          <PermissionGate resource="vehicles" action="create">
+            <Link href="/dashboard/veiculos/cadastrar">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Veículo
+              </Button>
+            </Link>
+          </PermissionGate>
         </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex-1 max-w-md">
+            <SearchInput
+              placeholder="Buscar veículos..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Carregando...
+          </div>
+        </div>
+
+        <TableShimmer rows={6} columns={8} />
       </div>
     );
   }
@@ -113,136 +149,119 @@ export function VehiclesList() {
 
       <div className="flex items-center gap-4">
         <div className="flex-1 max-w-md">
-          <input
-            type="text"
+          <SearchInput
             placeholder="Buscar veículos..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            onChange={(e) => handleSearch(e.target.value)}
           />
         </div>
         <div className="text-sm text-muted-foreground">
-          {totalCount} veículos total
+          {total} veículos total
         </div>
       </div>
 
-      {filteredVehicles.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <div className="text-center">
-              <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">
-                {searchTerm
-                  ? "Nenhum veículo encontrado"
-                  : "Nenhum veículo cadastrado"}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm
-                  ? "Tente ajustar os termos de busca"
-                  : "Comece cadastrando o primeiro veículo"}
-              </p>
-              {!searchTerm && (
-                <Link href="/dashboard/veiculos/cadastrar">
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Cadastrar Veículo
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      {vehicles.length === 0 ? (
+        <div className="rounded-lg border border-border bg-card p-8 text-center">
+          <div className="text-center">
+            <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">
+              {searchTerm
+                ? "Nenhum veículo encontrado"
+                : "Nenhum veículo cadastrado"}
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              {searchTerm
+                ? "Tente ajustar os termos de busca"
+                : "Comece cadastrando o primeiro veículo"}
+            </p>
+            {!searchTerm && (
+              <Link href="/dashboard/veiculos/cadastrar">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Cadastrar Veículo
+                </Button>
+              </Link>
+            )}
+          </div>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-          {filteredVehicles.map((vehicle) => (
-            <Card
-              key={vehicle.id}
-              className="hover:shadow-md transition-shadow"
-            >
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">
-                      {vehicle.brand} {vehicle.model}
-                    </CardTitle>
-                    <CardDescription>{vehicle.license_plate}</CardDescription>
-                  </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Veículo</TableHead>
+              <TableHead>Placa</TableHead>
+              <TableHead>Ano</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Combustível</TableHead>
+              <TableHead>Capacidade</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-[100px]">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {vehicles.map((vehicle) => (
+              <TableRow key={vehicle.id}>
+                <TableCell className="font-medium">
+                  {vehicle.brand} {vehicle.model}
+                </TableCell>
+                <TableCell>{vehicle.license_plate}</TableCell>
+                <TableCell>{vehicle.year}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant="outline"
+                    className={`text-xs ${getVehicleTypeColor(vehicle.vehicle_type)}`}
+                  >
+                    {getVehicleTypeLabel(vehicle.vehicle_type)}
+                  </Badge>
+                </TableCell>
+                <TableCell>{vehicle.fuel_type || "Não informado"}</TableCell>
+                <TableCell>
+                  {vehicle.module_capacity 
+                    ? `${vehicle.module_capacity.toLocaleString("pt-BR")} L`
+                    : "Não informado"
+                  }
+                </TableCell>
+                <TableCell>
                   <Badge variant={vehicle.active ? "default" : "secondary"}>
                     {vehicle.active ? "Ativo" : "Inativo"}
                   </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2">
-                  <div className="text-sm">
-                    <span className="font-medium">Ano:</span> {vehicle.year}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <PermissionGate resource="vehicles" action="read">
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-1" />
+                        Ver
+                      </Button>
+                    </PermissionGate>
+                    <PermissionGate resource="vehicles" action="update">
+                      <Button variant="outline" size="sm">
+                        <Edit className="h-4 w-4 mr-1" />
+                        Editar
+                      </Button>
+                    </PermissionGate>
                   </div>
-                  <div className="text-sm">
-                    <span className="font-medium">Tipo:</span>{" "}
-                    <Badge
-                      variant="outline"
-                      className={`text-xs ${getVehicleTypeColor(
-                        vehicle.vehicle_type,
-                      )}`}
-                    >
-                      {getVehicleTypeLabel(vehicle.vehicle_type)}
-                    </Badge>
-                  </div>
-                  {vehicle.fuel_type && (
-                    <div className="text-sm">
-                      <span className="font-medium">Combustível:</span>{" "}
-                      {vehicle.fuel_type}
-                    </div>
-                  )}
-                  {vehicle.module_capacity && (
-                    <div className="text-sm">
-                      <span className="font-medium">Capacidade:</span>{" "}
-                      {vehicle.module_capacity.toLocaleString("pt-BR")} L
-                    </div>
-                  )}
-                  <div className="text-sm">
-                    <span className="font-medium">Cadastrado em:</span>{" "}
-                    {vehicle.created_at
-                      ? new Date(vehicle.created_at).toLocaleDateString("pt-BR")
-                      : "Não informado"}
-                  </div>
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <PermissionGate resource="vehicles" action="read">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Eye className="h-4 w-4 mr-1" />
-                      Ver
-                    </Button>
-                  </PermissionGate>
-                  <PermissionGate resource="vehicles" action="update">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Edit className="h-4 w-4 mr-1" />
-                      Editar
-                    </Button>
-                  </PermissionGate>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       {pagination.totalPages > 1 && (
-        <div className="flex justify-center mt-8">
+        <div className="flex justify-center mt-6">
           <Pagination>
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
                   href="#"
-                  size="default"
                   onClick={(e) => {
                     e.preventDefault();
-                    pagination.goToPreviousPage();
+                    if (currentPage > 1) {
+                      handlePageChange(currentPage - 1);
+                    }
                   }}
-                  className={
-                    !pagination.hasPreviousPage ? "pointer-events-none opacity-50" : ""
-                  }
+                  className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
 
@@ -250,24 +269,23 @@ export function VehiclesList() {
                 let pageNumber;
                 if (pagination.totalPages <= 5) {
                   pageNumber = i + 1;
-                } else if (pagination.currentPage <= 3) {
+                } else if (currentPage <= 3) {
                   pageNumber = i + 1;
-                } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                } else if (currentPage >= pagination.totalPages - 2) {
                   pageNumber = pagination.totalPages - 4 + i;
                 } else {
-                  pageNumber = pagination.currentPage - 2 + i;
+                  pageNumber = currentPage - 2 + i;
                 }
 
                 return (
                   <PaginationItem key={pageNumber}>
                     <PaginationLink
                       href="#"
-                      size="icon"
                       onClick={(e) => {
                         e.preventDefault();
-                        pagination.goToPage(pageNumber);
+                        handlePageChange(pageNumber);
                       }}
-                      isActive={pagination.currentPage === pageNumber}
+                      isActive={currentPage === pageNumber}
                     >
                       {pageNumber}
                     </PaginationLink>
@@ -275,7 +293,7 @@ export function VehiclesList() {
                 );
               })}
 
-              {pagination.totalPages > 5 && pagination.currentPage < pagination.totalPages - 2 && (
+              {pagination.totalPages > 5 && currentPage < pagination.totalPages - 2 && (
                 <PaginationItem>
                   <PaginationEllipsis />
                 </PaginationItem>
@@ -284,16 +302,13 @@ export function VehiclesList() {
               <PaginationItem>
                 <PaginationNext
                   href="#"
-                  size="default"
                   onClick={(e) => {
                     e.preventDefault();
-                    pagination.goToNextPage();
+                    if (currentPage < pagination.totalPages) {
+                      handlePageChange(currentPage + 1);
+                    }
                   }}
-                  className={
-                    !pagination.hasNextPage
-                      ? "pointer-events-none opacity-50"
-                      : ""
-                  }
+                  className={currentPage >= pagination.totalPages ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
             </PaginationContent>

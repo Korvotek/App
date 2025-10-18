@@ -6,24 +6,19 @@ import type { Database } from "@/lib/supabase/database.types";
 
 type UserUpdate = Database["public"]["Tables"]["users"]["Update"];
 
-export async function getUsers(page: number = 1, limit: number = 12) {
+export async function getUsers(page: number = 1, limit: number = 12, search?: string) {
   const { tenantId, supabase } = await getCurrentUserAndTenant();
 
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  const { count: totalCount, error: countError } = await supabase
+  let countQuery = supabase
     .from("users")
     .select("id", { count: "exact", head: true })
     .eq("tenant_id", tenantId)
     .eq("active", true);
 
-  if (countError) {
-    console.error("Error counting users:", countError);
-    return null;
-  }
-
-  const { data: users, error } = await supabase
+  let dataQuery = supabase
     .from("users")
     .select(`
       id,
@@ -41,8 +36,21 @@ export async function getUsers(page: number = 1, limit: number = 12) {
     .order("created_at", { ascending: false })
     .range(from, to);
 
+  if (search && search.trim()) {
+    const searchTerm = `%${search.trim()}%`;
+    countQuery = countQuery.or(`email.ilike.${searchTerm},full_name.ilike.${searchTerm},role.ilike.${searchTerm}`);
+    dataQuery = dataQuery.or(`email.ilike.${searchTerm},full_name.ilike.${searchTerm},role.ilike.${searchTerm}`);
+  }
+
+  const { count: totalCount, error: countError } = await countQuery;
+
+  if (countError) {
+    return null;
+  }
+
+  const { data: users, error } = await dataQuery;
+
   if (error) {
-    console.error("Error fetching users:", error);
     return null;
   }
 
