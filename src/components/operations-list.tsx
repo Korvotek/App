@@ -19,13 +19,17 @@ import {
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PermissionGate } from "@/components/auth/permission-gate";
 import { 
   Calendar, 
   Clock, 
   User, 
   Truck, 
-  Plus
+  Plus,
+  Filter,
+  X
 } from "lucide-react";
 import type { OperationWithRelations } from "@/actions/operations-actions";
 
@@ -55,6 +59,12 @@ export function OperationsList() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [startDateFilter, setStartDateFilter] = useState("");
+  const [endDateFilter, setEndDateFilter] = useState("");
+  const [orderFulfillmentFilter, setOrderFulfillmentFilter] = useState("");
+  const [driverFilter, setDriverFilter] = useState("");
+  const [operationTypeFilter, setOperationTypeFilter] = useState("all");
+  const [showFilters, setShowFilters] = useState(false);
   
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
@@ -75,6 +85,7 @@ export function OperationsList() {
     resetPage,
     totalItems,
     setTotalItems,
+    changeLimit,
   } = pagination;
 
   const { data: operationsData, isLoading, error } = useOperations({
@@ -82,6 +93,11 @@ export function OperationsList() {
     limit,
     search: debouncedSearchTerm.trim() || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
+    startDate: startDateFilter || undefined,
+    endDate: endDateFilter || undefined,
+    orderFulfillmentId: orderFulfillmentFilter.trim() || undefined,
+    driverId: driverFilter.trim() || undefined,
+    operationType: operationTypeFilter !== "all" ? operationTypeFilter : undefined,
   });
 
   const totalFromServer = operationsData?.totalCount ?? 0;
@@ -102,6 +118,58 @@ export function OperationsList() {
   const handleStatusFilter = (status: string) => {
     setStatusFilter(status);
     resetPage();
+  };
+
+  const handleStartDateFilter = (date: string) => {
+    setStartDateFilter(date);
+    resetPage();
+  };
+
+  const handleEndDateFilter = (date: string) => {
+    setEndDateFilter(date);
+    resetPage();
+  };
+
+  const handleOrderFulfillmentFilter = (value: string) => {
+    setOrderFulfillmentFilter(value);
+    resetPage();
+  };
+
+  const handleDriverFilter = (value: string) => {
+    setDriverFilter(value);
+    resetPage();
+  };
+
+  const handleOperationTypeFilter = (type: string) => {
+    setOperationTypeFilter(type);
+    resetPage();
+  };
+
+  const clearAllFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setStartDateFilter("");
+    setEndDateFilter("");
+    setOrderFulfillmentFilter("");
+    setDriverFilter("");
+    setOperationTypeFilter("all");
+    resetPage();
+  };
+
+  const hasActiveFilters = () => {
+    return (
+      searchTerm.trim() !== "" ||
+      statusFilter !== "all" ||
+      startDateFilter !== "" ||
+      endDateFilter !== "" ||
+      orderFulfillmentFilter.trim() !== "" ||
+      driverFilter.trim() !== "" ||
+      operationTypeFilter !== "all"
+    );
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    changeLimit(newLimit);
   };
 
 
@@ -209,7 +277,8 @@ export function OperationsList() {
       </div>
 
       
-      <div className="flex items-center gap-4">
+      {/* Barra de busca e filtros principais */}
+      <div className="flex items-center gap-4 flex-wrap">
         <div className="flex-1 max-w-md">
           <SearchInput
             placeholder="Buscar operações..."
@@ -218,21 +287,124 @@ export function OperationsList() {
           />
         </div>
         
-        <select
-          value={statusFilter}
-          onChange={(e) => handleStatusFilter(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <Button
+          variant="outline"
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center gap-2"
         >
-          <option value="all">Todos os status</option>
-          {Object.entries(operationStatusLabels).map(([key, label]) => (
-            <option key={key} value={key}>{label}</option>
-          ))}
-        </select>
+          <Filter className="h-4 w-4" />
+          Filtros
+          {hasActiveFilters() && (
+            <Badge variant="secondary" className="ml-1 px-1 py-0 text-xs">
+              !
+            </Badge>
+          )}
+        </Button>
 
         <div className="text-sm text-muted-foreground">
           {totalFromServer} operação{totalFromServer !== 1 ? 'ões' : ''}
         </div>
       </div>
+
+      {/* Painel de filtros expandido */}
+      {showFilters && (
+        <div className="bg-gray-50 p-4 rounded-lg border space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-medium text-gray-900">Filtros Avançados</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearAllFilters}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Limpar todos
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Filtro por Status */}
+            <div className="space-y-2">
+              <Label htmlFor="status-filter">Status</Label>
+              <select
+                id="status-filter"
+                value={statusFilter}
+                onChange={(e) => handleStatusFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">Todos os status</option>
+                {Object.entries(operationStatusLabels).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filtro por Tipo de Operação */}
+            <div className="space-y-2">
+              <Label htmlFor="operation-type-filter">Tipo de Operação</Label>
+              <select
+                id="operation-type-filter"
+                value={operationTypeFilter}
+                onChange={(e) => handleOperationTypeFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">Todos os tipos</option>
+                {Object.entries(operationTypeLabels).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filtro por Data Inicial */}
+            <div className="space-y-2">
+              <Label htmlFor="start-date-filter">Data Inicial</Label>
+              <Input
+                id="start-date-filter"
+                type="date"
+                value={startDateFilter}
+                onChange={(e) => handleStartDateFilter(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            {/* Filtro por Data Final */}
+            <div className="space-y-2">
+              <Label htmlFor="end-date-filter">Data Final</Label>
+              <Input
+                id="end-date-filter"
+                type="date"
+                value={endDateFilter}
+                onChange={(e) => handleEndDateFilter(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            {/* Filtro por Número O.F */}
+            <div className="space-y-2">
+              <Label htmlFor="order-fulfillment-filter">Número O.F</Label>
+              <Input
+                id="order-fulfillment-filter"
+                placeholder="Digite o número O.F..."
+                value={orderFulfillmentFilter}
+                onChange={(e) => handleOrderFulfillmentFilter(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            {/* Filtro por Motorista */}
+            <div className="space-y-2">
+              <Label htmlFor="driver-filter">Motorista</Label>
+              <Input
+                id="driver-filter"
+                placeholder="Digite o nome do motorista..."
+                value={driverFilter}
+                onChange={(e) => handleDriverFilter(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       
       {isLoading ? (
@@ -244,7 +416,7 @@ export function OperationsList() {
             Nenhuma operação encontrada
           </h3>
           <p className="mt-1 text-sm text-gray-500">
-            {searchTerm || statusFilter !== "all"
+            {hasActiveFilters()
               ? "Tente ajustar os filtros de busca."
               : "Comece criando uma nova operação."}
           </p>
@@ -254,12 +426,16 @@ export function OperationsList() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Evento</TableHead>
-                <TableHead>Tipo</TableHead>
                 <TableHead>Data/Hora</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Evento</TableHead>
+                <TableHead>Local</TableHead>
+                <TableHead>Equipamentos/Serviços</TableHead>
+                <TableHead>O.F</TableHead>
+                <TableHead>Produtor</TableHead>
                 <TableHead>Motorista</TableHead>
                 <TableHead>Veículo</TableHead>
-                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -269,21 +445,7 @@ export function OperationsList() {
                   className="cursor-pointer hover:bg-gray-50"
                   onClick={() => router.push(`/dashboard/operacoes/${operation.id}`)}
                 >
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">
-                        {operation.events?.title || `Evento ${operation.event_id?.substring(0, 8)}...`}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        #{operation.events?.event_number || "N/A"}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {operationTypeLabels[operation.operation_type as keyof typeof operationTypeLabels] || operation.operation_type}
-                    </Badge>
-                  </TableCell>
+                  {/* Data/Hora */}
                   <TableCell>
                     <div className="space-y-1">
                       <div className="flex items-center gap-1 text-sm">
@@ -299,43 +461,137 @@ export function OperationsList() {
                       </div>
                     </div>
                   </TableCell>
+
+                  {/* Tipo */}
                   <TableCell>
-                    {operation.parties?.display_name ? (
-                      <div className="flex items-center gap-1">
-                        <User className="h-3 w-3" />
-                        {operation.parties.display_name}
-                      </div>
-                    ) : operation.driver_id ? (
-                      <span className="text-gray-400">Motorista {operation.driver_id.substring(0, 8)}...</span>
-                    ) : (
-                      <span className="text-gray-400">Não atribuído</span>
-                    )}
+                    <Badge variant="outline">
+                      {operationTypeLabels[operation.operation_type as keyof typeof operationTypeLabels] || operation.operation_type}
+                    </Badge>
                   </TableCell>
-                  <TableCell>
-                    {operation.vehicles ? (
-                      <div className="flex items-center gap-1">
-                        <Truck className="h-3 w-3" />
-                        <div>
-                          <div className="font-medium">
-                            {operation.vehicles.license_plate}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {operation.vehicles.brand} {operation.vehicles.model}
-                          </div>
-                        </div>
-                      </div>
-                    ) : operation.vehicle_id ? (
-                      <span className="text-gray-400">Veículo {operation.vehicle_id.substring(0, 8)}...</span>
-                    ) : (
-                      <span className="text-gray-400">Não atribuído</span>
-                    )}
-                  </TableCell>
+
+                  {/* Status */}
                   <TableCell>
                     <Badge 
                       className={statusColors[operation.status as keyof typeof statusColors] || "bg-gray-100 text-gray-800"}
                     >
                       {operation.status ? operationStatusLabels[operation.status as keyof typeof operationStatusLabels] || operation.status : "N/A"}
                     </Badge>
+                  </TableCell>
+
+                  {/* Evento */}
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">
+                        {operation.events?.title || `Evento ${operation.event_id?.substring(0, 8)}...`}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        #{operation.events?.event_number || "N/A"}
+                      </div>
+                    </div>
+                  </TableCell>
+
+                  {/* Local */}
+                  <TableCell>
+                    <div className="text-sm">
+                      {operation.events?.event_locations?.[0] ? (
+                        <div>
+                          <div className="font-medium">
+                            {operation.events.event_locations[0].street}, {operation.events.event_locations[0].number}
+                          </div>
+                          <div className="text-gray-500">
+                            {operation.events.event_locations[0].neighborhood}, {operation.events.event_locations[0].city}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">Não informado</span>
+                      )}
+                    </div>
+                  </TableCell>
+
+                  {/* Equipamentos/Serviços */}
+                  <TableCell>
+                    <div className="text-sm">
+                      {operation.events?.event_services && operation.events.event_services.length > 0 ? (
+                        <div className="space-y-1">
+                          {operation.events.event_services.slice(0, 2).map((service, index) => (
+                            <div key={service.id || index} className="text-xs">
+                              <div className="font-medium">
+                                {service.products_services?.description || "Serviço não especificado"}
+                              </div>
+                              {service.quantity && (
+                                <div className="text-gray-500">
+                                  Qtd: {service.quantity}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          {operation.events.event_services.length > 2 && (
+                            <div className="text-xs text-gray-500">
+                              +{operation.events.event_services.length - 2} mais
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">Não informado</span>
+                      )}
+                    </div>
+                  </TableCell>
+
+                  {/* O.F */}
+                  <TableCell>
+                    <div className="text-sm">
+                      {operation.order_fulfillment_id ? (
+                        <span className="font-medium">#{operation.order_fulfillment_id.substring(0, 8)}...</span>
+                      ) : (
+                        <span className="text-gray-400">N/A</span>
+                      )}
+                    </div>
+                  </TableCell>
+
+                  {/* Produtor */}
+                  <TableCell>
+                    <div className="text-sm">
+                      {operation.events?.client_name ? (
+                        <span>{operation.events.client_name}</span>
+                      ) : (
+                        <span className="text-gray-400">Não informado</span>
+                      )}
+                    </div>
+                  </TableCell>
+
+                  {/* Motorista */}
+                  <TableCell>
+                    {operation.parties?.display_name ? (
+                      <div className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        <span className="text-sm">{operation.parties.display_name}</span>
+                      </div>
+                    ) : operation.driver_id ? (
+                      <span className="text-gray-400 text-sm">Motorista {operation.driver_id.substring(0, 8)}...</span>
+                    ) : (
+                      <span className="text-gray-400 text-sm">Não atribuído</span>
+                    )}
+                  </TableCell>
+
+                  {/* Veículo */}
+                  <TableCell>
+                    {operation.vehicles ? (
+                      <div className="flex items-center gap-1">
+                        <Truck className="h-3 w-3" />
+                        <div>
+                          <div className="font-medium text-sm">
+                            {operation.vehicles.license_plate}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {operation.vehicles.brand} {operation.vehicles.model}
+                          </div>
+                        </div>
+                      </div>
+                    ) : operation.vehicle_id ? (
+                      <span className="text-gray-400 text-sm">Veículo {operation.vehicle_id.substring(0, 8)}...</span>
+                    ) : (
+                      <span className="text-gray-400 text-sm">Não atribuído</span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -345,8 +601,37 @@ export function OperationsList() {
       )}
 
       
+      {/* Controles de paginação */}
       {totalFromServer > 0 && (
-        <div className="flex justify-center mt-6">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
+          {/* Seletor de quantidade por página */}
+          <div className="flex items-center gap-2">
+            <Label htmlFor="items-per-page" className="text-sm text-gray-600">
+              Itens por página:
+            </Label>
+            <select
+              id="items-per-page"
+              value={limit}
+              onChange={(e) => handleLimitChange(Number(e.target.value))}
+              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+
+          {/* Informações da paginação */}
+          <div className="text-sm text-gray-600">
+            Mostrando {((currentPage - 1) * limit) + 1} a {Math.min(currentPage * limit, totalFromServer)} de {totalFromServer} operações
+          </div>
+        </div>
+      )}
+
+      {/* Paginação */}
+      {totalFromServer > 0 && (
+        <div className="flex justify-center mt-4">
           <Pagination>
             <PaginationContent>
               <PaginationItem>

@@ -3,16 +3,20 @@
 import { getCurrentUserAndTenant } from "@/lib/auth/server-helpers";
 import { Database } from "@/lib/supabase/database.types";
 
-type OperationRow = Database["public"]["Tables"]["event_operations"]["Row"];
-type EventRow = Database["public"]["Tables"]["events"]["Row"];
-type PartyRow = Database["public"]["Tables"]["parties"]["Row"];
-type VehicleRow = Database["public"]["Tables"]["vehicles"]["Row"];
+interface EnhancedError extends Error {
+  originalError?: unknown;
+  originalErrorType?: string;
+  originalErrorString?: string;
+  timestamp?: string;
+  functionName?: string;
+}
 
-export type OperationWithRelations = OperationRow & {
+interface OperationRelations {
   events?: {
     title: string;
     event_number: string;
     description: string | null;
+    client_name?: string | null;
     event_locations?: Array<{
       street: string | null;
       number: string | null;
@@ -22,9 +26,48 @@ export type OperationWithRelations = OperationRow & {
       state: string;
       postal_code: string | null;
     }> | null;
+    event_services?: Array<{
+      id: string;
+      quantity?: number;
+      products_services?: {
+        description: string | null;
+      } | null;
+    }> | null;
   } | null;
   parties?: Pick<PartyRow, "display_name"> | null;
   vehicles?: Pick<VehicleRow, "license_plate" | "model" | "brand"> | null;
+}
+
+type OperationRow = Database["public"]["Tables"]["event_operations"]["Row"];
+type PartyRow = Database["public"]["Tables"]["parties"]["Row"];
+type VehicleRow = Database["public"]["Tables"]["vehicles"]["Row"];
+
+export type OperationWithRelations = OperationRow & {
+  events?: {
+    title: string;
+    event_number: string;
+    description: string | null;
+    client_name?: string | null;
+    event_locations?: Array<{
+      street: string | null;
+      number: string | null;
+      complement: string | null;
+      neighborhood: string | null;
+      city: string;
+      state: string;
+      postal_code: string | null;
+    }> | null;
+    event_services?: Array<{
+      id: string;
+      quantity?: number;
+      products_services?: {
+        description: string | null;
+      } | null;
+    }> | null;
+  } | null;
+  parties?: Pick<PartyRow, "display_name"> | null;
+  vehicles?: Pick<VehicleRow, "license_plate" | "model" | "brand"> | null;
+  order_fulfillment_id?: string | null;
 };
 
 export interface GetOperationsOptions {
@@ -34,6 +77,11 @@ export interface GetOperationsOptions {
   eventId?: string;
   status?: string;
   operationId?: string;
+  startDate?: string;
+  endDate?: string;
+  orderFulfillmentId?: string;
+  driverId?: string;
+  operationType?: string;
 }
 
 export interface OperationsResponse<T = OperationRow> {
@@ -50,9 +98,26 @@ export async function getOperations({
   eventId,
   status,
   operationId,
+  startDate,
+  endDate,
+  orderFulfillmentId,
+  driverId,
+  operationType,
 }: GetOperationsOptions = {}): Promise<OperationsResponse<OperationWithRelations>> {
   try {
-    console.log("🔍 Iniciando getOperations com parâmetros:", { page, limit, search, eventId, status, operationId });
+    console.log("🔍 Iniciando getOperations com parâmetros:", { 
+      page, 
+      limit, 
+      search, 
+      eventId, 
+      status, 
+      operationId,
+      startDate,
+      endDate,
+      orderFulfillmentId,
+      driverId,
+      operationType
+    });
     
     const { tenantId, supabase } = await getCurrentUserAndTenant();
     console.log("✅ Usuário e tenant obtidos:", { tenantId: tenantId.substring(0, 8) + "..." });
@@ -70,6 +135,7 @@ export async function getOperations({
           title, 
           event_number, 
           description,
+          client_name,
           event_locations!event_locations_event_id_fkey(
             street,
             number,
@@ -78,6 +144,12 @@ export async function getOperations({
             city,
             state,
             postal_code
+          ),
+          event_services(
+            id,
+            products_services(
+              description
+            )
           )
         ),
         parties!event_operations_driver_id_fkey(display_name),
@@ -104,6 +176,36 @@ export async function getOperations({
       const searchTerm = `%${search.trim()}%`;
       countQuery = countQuery.or(`operation_type.ilike.${searchTerm},notes.ilike.${searchTerm}`);
       dataQuery = dataQuery.or(`operation_type.ilike.${searchTerm},notes.ilike.${searchTerm}`);
+    }
+
+    // Filtro por data inicial
+    if (startDate) {
+      countQuery = countQuery.gte("scheduled_start", startDate);
+      dataQuery = dataQuery.gte("scheduled_start", startDate);
+    }
+
+    // Filtro por data final
+    if (endDate) {
+      countQuery = countQuery.lte("scheduled_start", endDate);
+      dataQuery = dataQuery.lte("scheduled_start", endDate);
+    }
+
+    // Filtro por número O.F (Order Fulfillment)
+    if (orderFulfillmentId && orderFulfillmentId.trim()) {
+      countQuery = countQuery.eq("order_fulfillment_id", orderFulfillmentId.trim());
+      dataQuery = dataQuery.eq("order_fulfillment_id", orderFulfillmentId.trim());
+    }
+
+    // Filtro por motorista
+    if (driverId && driverId.trim()) {
+      countQuery = countQuery.eq("driver_id", driverId.trim());
+      dataQuery = dataQuery.eq("driver_id", driverId.trim());
+    }
+
+    // Filtro por tipo de operação
+    if (operationType && operationType !== "all") {
+      countQuery = countQuery.eq("operation_type", operationType as "MOBILIZATION" | "CLEANING" | "DEMOBILIZATION");
+      dataQuery = dataQuery.eq("operation_type", operationType as "MOBILIZATION" | "CLEANING" | "DEMOBILIZATION");
     }
 
     console.log("📊 Executando query de contagem...");
@@ -232,11 +334,11 @@ export async function getOperations({
     );
     
     // Adicionar informações extras ao erro
-    (enhancedError as any).originalError = error;
-    (enhancedError as any).originalErrorType = typeof error;
-    (enhancedError as any).originalErrorString = String(error);
-    (enhancedError as any).timestamp = new Date().toISOString();
-    (enhancedError as any).functionName = 'getOperations';
+    (enhancedError as EnhancedError).originalError = error;
+    (enhancedError as EnhancedError).originalErrorType = typeof error;
+    (enhancedError as EnhancedError).originalErrorString = String(error);
+    (enhancedError as EnhancedError).timestamp = new Date().toISOString();
+    (enhancedError as EnhancedError).functionName = 'getOperations';
     
     throw enhancedError;
   }
@@ -249,9 +351,26 @@ export async function getOperationsSafe({
   eventId,
   status,
   operationId,
+  startDate,
+  endDate,
+  orderFulfillmentId,
+  driverId,
+  operationType,
 }: GetOperationsOptions = {}): Promise<OperationsResponse<OperationWithRelations>> {
   try {
-    console.log("🔍 getOperationsSafe - Iniciando com parâmetros:", { page, limit, search, eventId, status, operationId });
+    console.log("🔍 getOperationsSafe - Iniciando com parâmetros:", { 
+      page, 
+      limit, 
+      search, 
+      eventId, 
+      status, 
+      operationId,
+      startDate,
+      endDate,
+      orderFulfillmentId,
+      driverId,
+      operationType
+    });
     
     const { tenantId, supabase } = await getCurrentUserAndTenant();
     console.log("✅ getOperationsSafe - Usuário e tenant obtidos");
@@ -300,6 +419,36 @@ export async function getOperationsSafe({
       dataQuery = dataQuery.or(`operation_type.ilike.${searchTerm},notes.ilike.${searchTerm}`);
     }
 
+    // Filtro por data inicial
+    if (startDate) {
+      countQuery = countQuery.gte("scheduled_start", startDate);
+      dataQuery = dataQuery.gte("scheduled_start", startDate);
+    }
+
+    // Filtro por data final
+    if (endDate) {
+      countQuery = countQuery.lte("scheduled_start", endDate);
+      dataQuery = dataQuery.lte("scheduled_start", endDate);
+    }
+
+    // Filtro por número O.F (Order Fulfillment)
+    if (orderFulfillmentId && orderFulfillmentId.trim()) {
+      countQuery = countQuery.eq("order_fulfillment_id", orderFulfillmentId.trim());
+      dataQuery = dataQuery.eq("order_fulfillment_id", orderFulfillmentId.trim());
+    }
+
+    // Filtro por motorista
+    if (driverId && driverId.trim()) {
+      countQuery = countQuery.eq("driver_id", driverId.trim());
+      dataQuery = dataQuery.eq("driver_id", driverId.trim());
+    }
+
+    // Filtro por tipo de operação
+    if (operationType && operationType !== "all") {
+      countQuery = countQuery.eq("operation_type", operationType as "MOBILIZATION" | "CLEANING" | "DEMOBILIZATION");
+      dataQuery = dataQuery.eq("operation_type", operationType as "MOBILIZATION" | "CLEANING" | "DEMOBILIZATION");
+    }
+
     console.log("📊 getOperationsSafe - Executando queries...");
     const { count, error: countError } = await countQuery;
     if (countError) {
@@ -319,7 +468,7 @@ export async function getOperationsSafe({
     // Buscar dados relacionados separadamente para evitar problemas de serialização
     const operations = await Promise.all(
       (data || []).map(async (operation) => {
-        const relations: any = {};
+        const relations: OperationRelations = {};
 
         // Buscar evento
         if (operation.event_id) {
@@ -342,10 +491,27 @@ export async function getOperationsSafe({
               if (locationsError) {
                 console.warn(`⚠️ Erro ao buscar localizações do evento ${operation.event_id}:`, locationsError.message);
               }
+
+              // Buscar serviços do evento separadamente
+              const { data: eventServices, error: servicesError } = await supabase
+                .from("event_services")
+                .select(`
+                  id,
+                  quantity,
+                  products_services(
+                    description
+                  )
+                `)
+                .eq("event_id", operation.event_id);
+              
+              if (servicesError) {
+                console.warn(`⚠️ Erro ao buscar serviços do evento ${operation.event_id}:`, servicesError.message);
+              }
               
               relations.events = {
                 ...eventData,
-                event_locations: eventLocations || []
+                event_locations: eventLocations || [],
+                event_services: eventServices || []
               };
             }
           } catch (eventErr) {

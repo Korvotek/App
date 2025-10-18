@@ -12,7 +12,7 @@ export function usePagination({
   totalItems = 0,
 }: UsePaginationOptions = {}) {
   const [currentPage, setCurrentPage] = useState(initialPage);
-  const [limit] = useState(initialLimit);
+  const [limit, setLimit] = useState(initialLimit);
   const [totalItemsState, setTotalItemsState] = useState(totalItems);
 
   useEffect(() => {
@@ -58,6 +58,11 @@ export function usePagination({
     setTotalItemsState(value);
   }, []);
 
+  const changeLimit = useCallback((newLimit: number) => {
+    setLimit(newLimit);
+    setCurrentPage(1); // Reset para primeira página ao mudar limite
+  }, []);
+
   return {
     currentPage,
     limit,
@@ -70,5 +75,6 @@ export function usePagination({
     goToPreviousPage,
     resetPage,
     setTotalItems,
+    changeLimit,
   };
 }
