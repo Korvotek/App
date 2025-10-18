@@ -24,6 +24,7 @@ import {
   Calendar,
   Settings,
   Zap,
+  CalendarDays,
 } from "lucide-react";
 import { PermissionGate } from "@/components/auth/permission-gate";
 import type { User } from "@supabase/supabase-js";
@@ -63,6 +64,12 @@ const menuItems = [
     label: "Eventos",
     href: "/dashboard/eventos",
     permission: { resource: "events", action: "read" },
+  },
+  {
+    icon: CalendarDays,
+    label: "Calendário",
+    href: "/dashboard/calendario",
+    permission: { resource: "operations", action: "read" },
   },
   {
     icon: Zap,

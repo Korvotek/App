@@ -206,7 +206,7 @@ export function OperationsList() {
               Gerencie as operações dos eventos
             </p>
           </div>
-          <PermissionGate resource="events" action="create">
+          <PermissionGate resource="operations" action="create">
             <Link href="/dashboard/operacoes/cadastrar">
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
@@ -230,7 +230,7 @@ export function OperationsList() {
               Gerencie as operações dos eventos
             </p>
           </div>
-          <PermissionGate resource="events" action="create">
+          <PermissionGate resource="operations" action="create">
             <Link href="/dashboard/operacoes/cadastrar">
               <Button>
                 <Plus className="h-4 w-4 mr-2" />

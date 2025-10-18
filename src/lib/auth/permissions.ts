@@ -14,6 +14,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: "customers", actions: ["read", "create", "update", "delete", "sync"] },
     { resource: "services", actions: ["read", "create", "update", "delete", "sync"] },
     { resource: "events", actions: ["read", "create", "update", "delete"] },
+    { resource: "operations", actions: ["read", "create", "update", "delete"] },
     { resource: "dashboard", actions: ["read"] },
     { resource: "integrations", actions: ["read", "manage"] },
   ],
@@ -23,6 +24,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: "customers", actions: ["read", "create", "update", "delete", "sync"] },
     { resource: "services", actions: ["read", "update", "sync"] },
     { resource: "events", actions: ["read", "create", "update", "delete"] },
+    { resource: "operations", actions: ["read", "create", "update", "delete"] },
     { resource: "dashboard", actions: ["read"] },
     { resource: "integrations", actions: ["read"] },
   ],
@@ -32,6 +34,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: "customers", actions: ["read"] },
     { resource: "services", actions: ["read"] },
     { resource: "events", actions: ["read"] },
+    { resource: "operations", actions: ["read"] },
     { resource: "dashboard", actions: ["read"] },
   ],
 };
