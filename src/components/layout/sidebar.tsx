@@ -23,6 +23,7 @@ import {
   Briefcase,
   Calendar,
   Settings,
+  Zap,
 } from "lucide-react";
 import { PermissionGate } from "@/components/auth/permission-gate";
 import type { User } from "@supabase/supabase-js";
@@ -64,7 +65,7 @@ const menuItems = [
     permission: { resource: "events", action: "read" },
   },
   {
-    icon: Settings,
+    icon: Zap,
     label: "Operações",
     href: "/dashboard/operacoes",
     permission: { resource: "operations", action: "read" },
