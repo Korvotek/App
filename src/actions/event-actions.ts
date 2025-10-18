@@ -294,10 +294,12 @@ export async function createEvent(formData: FormData) {
     }
 
     revalidatePath("/dashboard/eventos");
-    redirect("/dashboard/eventos/success");
   } catch (error) {
     throw new Error(`Erro ao criar evento: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
   }
+  
+  // Redirect após sucesso (fora do try-catch para evitar capturar NEXT_REDIRECT)
+  redirect("/dashboard/eventos/success");
 }
 
 export async function getEvents(
@@ -306,7 +308,10 @@ export async function getEvents(
   filters: EventFilters = {}
 ): Promise<EventsResponse> {
   try {
+    console.log("🔍 getEvents - Iniciando busca:", { page, limit, filters });
+    
     const { tenantId, supabase } = await getCurrentUserAndTenant();
+    console.log("✅ getEvents - Tenant ID:", tenantId.substring(0, 8) + "...");
 
     const from = (page - 1) * limit;
     const to = from + limit - 1;
@@ -317,7 +322,26 @@ export async function getEvents(
         *,
         conta_azul_customers!events_client_id_fkey(
           name,
-          document
+          document,
+          email,
+          phone
+        ),
+        event_locations(
+          street,
+          number,
+          complement,
+          neighborhood,
+          city,
+          state,
+          postal_code
+        ),
+        event_services(
+          *,
+          products_services(
+            description,
+            item_type,
+            service_type
+          )
         )
       `, { count: "exact" })
       .eq("tenant_id", tenantId)
@@ -337,20 +361,36 @@ export async function getEvents(
 
     const { data: events, error, count } = await query.range(from, to);
 
+    console.log("📊 getEvents - Resultado da query:", {
+      eventsCount: events?.length || 0,
+      totalCount: count,
+      error: error?.message,
+      hasEvents: !!events
+    });
+
     if (error) {
+      console.error("❌ getEvents - Erro na query:", error);
       throw new Error("Erro ao buscar eventos");
     }
 
     const totalCount = count || 0;
     const totalPages = Math.ceil(totalCount / limit);
 
-    return {
+    const result = {
       events: events || [],
       totalCount,
       page,
       limit,
       totalPages,
     };
+
+    console.log("✅ getEvents - Retornando resultado:", {
+      eventsCount: result.events.length,
+      totalCount: result.totalCount,
+      totalPages: result.totalPages
+    });
+
+    return result;
   } catch (error) {
     throw new Error("Erro ao buscar eventos");
   }
