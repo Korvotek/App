@@ -26,3 +26,4 @@ function SearchInput({ className, icon, ...props }: SearchInputProps) {
 }
 
 export { SearchInput };
+

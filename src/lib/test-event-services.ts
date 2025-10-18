@@ -26,3 +26,4 @@ export async function testEventServiceCreation() {
   console.log("✅ Estrutura do serviço está correta");
   return true;
 }
+

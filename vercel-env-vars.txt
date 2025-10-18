@@ -4,3 +4,4 @@ NODE_ENV=production
 NEXT_PUBLIC_CONTA_AZUL_CLIENT_ID=mqgrgqunpa34g7t8b35qvcia3
 CONTA_AZUL_CLIENT_SECRET=ao9clppnmmp17ftujp00rfjv65qcitaq5h5t517nluupkmirp81
 CONTA_AZUL_SCOPES=openid profile aws.cognito.signin.user.admin
+

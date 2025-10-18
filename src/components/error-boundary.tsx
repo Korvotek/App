@@ -90,3 +90,4 @@ export function useErrorHandler() {
     // Aqui você pode enviar o erro para um serviço de monitoramento
   };
 }
+

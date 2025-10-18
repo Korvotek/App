@@ -715,7 +715,7 @@ export function EventRegistrationForm() {
             {eventServices.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <p>Nenhum serviço selecionado</p>
-                <p className="text-sm">Clique em "Adicionar Serviço" para começar</p>
+                <p className="text-sm">Clique em &quot;Adicionar Serviço&quot; para começar</p>
               </div>
             )}
           </CardContent>

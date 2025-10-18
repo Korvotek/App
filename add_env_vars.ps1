@@ -13,3 +13,4 @@ foreach ($var in $envVars.GetEnumerator()) {
     # Simular o comando vercel env add
     Write-Host "vercel env add $($var.Key) production"
 }
+

@@ -34,3 +34,4 @@ export function useCustomers({
     gcTime: 1000 * 60 * 10, // 10 minutos
   });
 }
+

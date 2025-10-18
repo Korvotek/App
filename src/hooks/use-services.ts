@@ -26,3 +26,4 @@ export function useServices({
     gcTime: 1000 * 60 * 10, // 10 minutos
   });
 }
+

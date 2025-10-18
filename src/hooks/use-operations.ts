@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  getOperations,
   getOperationsSafe,
   createOperation,
   updateOperation,
@@ -15,6 +14,14 @@ import type {
   OperationWithRelations,
   OperationsResponse,
 } from "@/actions/operations-actions";
+
+interface EnhancedError extends Error {
+  originalError?: unknown;
+  originalErrorType?: string;
+  originalErrorString?: string;
+  queryOptions?: GetOperationsOptions;
+  timestamp?: string;
+}
 
 export interface UseOperationsOptions extends GetOperationsOptions {
   enabled?: boolean;
@@ -60,11 +67,11 @@ export function useOperations(options: UseOperationsOptions = {}) {
         );
         
         // Adicionar informações extras ao erro
-        (enhancedError as any).originalError = error;
-        (enhancedError as any).originalErrorType = typeof error;
-        (enhancedError as any).originalErrorString = String(error);
-        (enhancedError as any).queryOptions = queryOptions;
-        (enhancedError as any).timestamp = new Date().toISOString();
+        (enhancedError as EnhancedError).originalError = error;
+        (enhancedError as EnhancedError).originalErrorType = typeof error;
+        (enhancedError as EnhancedError).originalErrorString = String(error);
+        (enhancedError as EnhancedError).queryOptions = queryOptions;
+        (enhancedError as EnhancedError).timestamp = new Date().toISOString();
         
         throw enhancedError;
       }

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, MapPin, Phone, Mail, User, Building } from "lucide-react";
+import { Calendar, MapPin, Phone, Mail, User, Building, RefreshCw } from "lucide-react";
 import { getContaAzulCustomers } from "@/actions/event-actions";
 import { toast } from "sonner";
 

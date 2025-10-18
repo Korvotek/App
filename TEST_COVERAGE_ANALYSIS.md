@@ -140,3 +140,4 @@ src/
 ## 🎯 **Recomendação**
 
 **Implementar testes para o sistema de permissões primeiro**, pois é a funcionalidade mais crítica para segurança da aplicação. Os outros testes podem ser implementados incrementalmente.
+

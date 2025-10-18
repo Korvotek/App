@@ -1,81 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { History, Calendar, User, Edit } from "lucide-react";
+import { History, Calendar, User } from "lucide-react";
+import { useEventAuditLogs } from "@/hooks/use-event-details";
 
 interface EventHistoryTabProps {
   eventId: string;
 }
 
-interface AuditLog {
-  id: string;
-  user_id: string;
-  user_name: string;
-  action: string;
-  field_name: string;
-  old_value: string;
-  new_value: string;
-  created_at: string;
-}
-
 export function EventHistoryTab({ eventId }: EventHistoryTabProps) {
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadAuditLogs();
-  }, [eventId]);
-
-  const loadAuditLogs = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Simulação de dados - aqui seria feita a chamada real para a API
-      const mockLogs: AuditLog[] = [
-        {
-          id: "1",
-          user_id: "user1",
-          user_name: "João Silva",
-          action: "UPDATE",
-          field_name: "title",
-          old_value: "Evento Original",
-          new_value: "Evento Atualizado",
-          created_at: "2024-01-15T10:30:00Z",
-        },
-        {
-          id: "2",
-          user_id: "user2",
-          user_name: "Maria Santos",
-          action: "UPDATE",
-          field_name: "contract_value",
-          old_value: "1000.00",
-          new_value: "1200.00",
-          created_at: "2024-01-14T14:20:00Z",
-        },
-        {
-          id: "3",
-          user_id: "user1",
-          user_name: "João Silva",
-          action: "CREATE",
-          field_name: "event",
-          old_value: "",
-          new_value: "Evento Original",
-          created_at: "2024-01-10T09:00:00Z",
-        },
-      ];
-
-      setAuditLogs(mockLogs);
-    } catch (err) {
-      setError("Erro ao carregar histórico");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data: auditLogs, isLoading, error } = useEventAuditLogs(eventId);
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString("pt-BR");
@@ -140,7 +76,7 @@ export function EventHistoryTab({ eventId }: EventHistoryTabProps) {
       <Card>
         <CardContent className="pt-6">
           <div className="text-center text-red-600">
-            {error}
+            Erro ao carregar histórico: {error.message}
           </div>
         </CardContent>
       </Card>
@@ -160,7 +96,7 @@ export function EventHistoryTab({ eventId }: EventHistoryTabProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {auditLogs.length === 0 ? (
+          {!auditLogs || auditLogs.length === 0 ? (
             <div className="text-center text-gray-600 py-8">
               <History className="h-12 w-12 mx-auto mb-4 text-gray-400" />
               <p>Nenhuma alteração registrada</p>
@@ -184,28 +120,28 @@ export function EventHistoryTab({ eventId }: EventHistoryTabProps) {
                       <TableCell className="text-sm">
                         <div className="flex items-center space-x-2">
                           <Calendar className="h-4 w-4 text-gray-400" />
-                          <span>{formatDateTime(log.created_at)}</span>
+                          <span>{formatDateTime(log.timestamp || log.created_at)}</span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
                           <User className="h-4 w-4 text-gray-400" />
-                          <span className="font-medium">{log.user_name}</span>
+                          <span className="font-medium">{log.user_id}</span>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getActionColor(log.action)}>
-                          {getActionLabel(log.action)}
+                        <Badge className={getActionColor(log.action_type)}>
+                          {getActionLabel(log.action_type)}
                         </Badge>
                       </TableCell>
                       <TableCell className="font-medium">
-                        {getFieldLabel(log.field_name)}
+                        {log.metadata?.field_name ? getFieldLabel(log.metadata.field_name) : "Sistema"}
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
-                        {log.old_value || "-"}
+                        {log.metadata?.old_value || "-"}
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
-                        {log.new_value || "-"}
+                        {log.metadata?.new_value || "-"}
                       </TableCell>
                     </TableRow>
                   ))}
