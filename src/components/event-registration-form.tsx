@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { createEvent, getContaAzulServices, getContaAzulCustomers } from "@/actions/event-actions";
 import { calcularMOLIDEEvento, gerarResumoEstatistico } from "@/lib/molide/event-calculator";
 import { EventFormSchema, type EventForm } from "@/lib/validations/event-schema";
+import { calculateAvailableWeekdays, validatePeriodForCleaning, type WeekdayOption } from "@/lib/weekday-calculator";
 
 interface ContaAzulService {
   id: string;
@@ -48,6 +49,8 @@ export function EventRegistrationForm() {
   const [customers, setCustomers] = useState<ContaAzulCustomer[]>([]);
   const [eventServices, setEventServices] = useState<EventService[]>([]);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [availableWeekdays, setAvailableWeekdays] = useState<WeekdayOption[]>([]);
+  const [periodValidation, setPeriodValidation] = useState<{ isValid: boolean; message?: string }>({ isValid: true });
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -90,6 +93,33 @@ export function EventRegistrationForm() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Recalcular dias disponíveis quando as datas mudarem
+    if (field === "mobilization_date" || field === "demobilization_date") {
+      updateAvailableWeekdays();
+    }
+  };
+
+  const updateAvailableWeekdays = () => {
+    if (formData.mobilization_date && formData.demobilization_date) {
+      const validation = validatePeriodForCleaning(formData.mobilization_date, formData.demobilization_date);
+      setAvailableWeekdays(validation.availableDays);
+      setPeriodValidation({ isValid: validation.isValid, message: validation.message });
+      
+      // Limpar dias selecionados que não estão mais disponíveis
+      if (!validation.isValid) {
+        setFormData(prev => ({ ...prev, cleaning_days: [] }));
+      } else {
+        const availableDayValues = validation.availableDays
+          .filter(day => day.isAvailable)
+          .map(day => day.value);
+        
+        setFormData(prev => ({
+          ...prev,
+          cleaning_days: prev.cleaning_days.filter(day => availableDayValues.includes(day))
+        }));
+      }
+    }
   };
 
   const handleCustomerChange = (customerId: string) => {

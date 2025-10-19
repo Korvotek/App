@@ -88,7 +88,7 @@ export function VehicleRegistrationForm() {
     
     // Campos opcionais
     setValue("vehicle_type", "CARGA");
-    setValue("fuel_type", "diesel"); // Usar valor válido do dropdown
+    setValue("fuel_type", "DIESEL"); // Usar valor válido do dropdown
     setValue("module_capacity", 15000);
     
     // Força a atualização do formulário
@@ -208,7 +208,7 @@ export function VehicleRegistrationForm() {
                 <Select
                   value={watchedValues.fuel_type || undefined}
                   onValueChange={(value) =>
-                    setValue("fuel_type", value as any)
+                    setValue("fuel_type", value as "DIESEL" | "GASOLINE" | "ETHANOL" | "FLEX" | "CNG" | "ELECTRIC" | "HYBRID")
                   }
                 >
                   <SelectTrigger>
