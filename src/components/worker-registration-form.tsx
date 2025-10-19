@@ -20,25 +20,32 @@ import {
 } from "@/lib/validations/worker-schema";
 import { registerWorker } from "@/actions/worker-actions";
 import { toast } from "sonner";
+import { usePhoneMask } from "@/hooks/use-phone-mask";
 
 export function WorkerRegistrationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const { phoneValue, handlePhoneChange, getPhoneNumbers } = usePhoneMask();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
+    watch,
   } = useForm<WorkerRegistrationData>({
     resolver: zodResolver(workerRegistrationSchema),
     defaultValues: {
       is_driver: false,
       is_helper: false,
-      cpf: "",
       email: "",
       phone: "",
     },
   });
+
+  // Atualizar o valor do formulário quando a máscara mudar
+  const phoneField = register("phone");
+  const currentPhoneValue = watch("phone");
 
   const onSubmit = async (data: WorkerRegistrationData) => {
     setIsSubmitting(true);
@@ -63,13 +70,6 @@ export function WorkerRegistrationForm() {
 
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Cadastro de Funcionário</CardTitle>
-        <CardDescription>
-          Preencha os dados abaixo para registrar um novo funcionário no
-          sistema.
-        </CardDescription>
-      </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
@@ -90,18 +90,6 @@ export function WorkerRegistrationForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cpf">CPF</Label>
-                <Input
-                  id="cpf"
-                  {...register("cpf")}
-                  placeholder="000.000.000-00"
-                />
-                {errors.cpf && (
-                  <p className="text-sm text-red-600">{errors.cpf.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
@@ -118,8 +106,13 @@ export function WorkerRegistrationForm() {
                 <Label htmlFor="phone">Telefone</Label>
                 <Input
                   id="phone"
-                  {...register("phone")}
-                  placeholder="(00) 0000-0000"
+                  value={phoneValue}
+                  onChange={(e) => {
+                    handlePhoneChange(e);
+                    setValue("phone", getPhoneNumbers());
+                  }}
+                  placeholder="(00) 00000-0000"
+                  maxLength={15}
                 />
                 {errors.phone && (
                   <p className="text-sm text-red-600">{errors.phone.message}</p>

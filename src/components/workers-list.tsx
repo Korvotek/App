@@ -24,11 +24,28 @@ import { TableShimmer } from "@/components/ui/shimmer";
 import { SearchInput } from "@/components/ui/search-input";
 import { PermissionGate } from "@/components/auth/permission-gate";
 import Link from "next/link";
-import { Plus, Edit, Eye, Users } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import { useWorkers } from "@/hooks/use-workers";
 import { usePagination } from "@/hooks/use-pagination";
 import { useDebounce } from "@/hooks/use-debounce";
 import { formatDocument } from "@/lib/utils";
+
+// Função para formatar telefone brasileiro
+function formatPhone(phone: string): string {
+  if (!phone) return "Não informado";
+  
+  // Remove todos os caracteres não numéricos
+  const numbers = phone.replace(/\D/g, '');
+  
+  // Aplica a máscara baseada no tamanho
+  if (numbers.length === 11) {
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+  } else if (numbers.length === 10) {
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
+  } else {
+    return phone; // Retorna o valor original se não for um telefone válido
+  }
+}
 
 type Worker = {
   id: string;
@@ -206,7 +223,6 @@ export function WorkersList() {
               <TableHead>Contato</TableHead>
               <TableHead>Admissão</TableHead>
               <TableHead>Funções</TableHead>
-              <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -214,6 +230,13 @@ export function WorkersList() {
               const employee = worker.party_employees[0];
               const primaryContact = getPrimaryContact(worker.party_contacts);
               const roles = getWorkerRoles(employee);
+
+              // Formatar o contato baseado no tipo
+              const formattedContact = primaryContact 
+                ? primaryContact.contact_type === "PHONE" 
+                  ? formatPhone(primaryContact.contact_value)
+                  : primaryContact.contact_value
+                : "Não informado";
 
               return (
                 <TableRow key={worker.id}>
@@ -223,7 +246,7 @@ export function WorkersList() {
                   <TableCell>{worker.full_name || "Não informado"}</TableCell>
                   <TableCell>{formatDocument(worker.cpf) || "Não informado"}</TableCell>
                   <TableCell>{employee.employee_number}</TableCell>
-                  <TableCell>{primaryContact?.contact_value || "Não informado"}</TableCell>
+                  <TableCell>{formattedContact}</TableCell>
                   <TableCell>
                     {employee.hire_date
                       ? new Date(employee.hire_date).toLocaleDateString("pt-BR")
@@ -240,22 +263,6 @@ export function WorkersList() {
                           {role}
                         </Badge>
                       ))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <PermissionGate resource="employees" action="read">
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-1" />
-                          Ver
-                        </Button>
-                      </PermissionGate>
-                      <PermissionGate resource="employees" action="update">
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4 mr-1" />
-                          Editar
-                        </Button>
-                      </PermissionGate>
                     </div>
                   </TableCell>
                 </TableRow>

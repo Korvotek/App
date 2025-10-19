@@ -24,10 +24,32 @@ import { TableShimmer } from "@/components/ui/shimmer";
 import { SearchInput } from "@/components/ui/search-input";
 import { PermissionGate } from "@/components/auth/permission-gate";
 import Link from "next/link";
-import { Plus, Edit, Eye, Car } from "lucide-react";
+import { Plus, Car } from "lucide-react";
 import { useVehicles } from "@/hooks/use-vehicles";
 import { usePagination } from "@/hooks/use-pagination";
 import { useDebounce } from "@/hooks/use-debounce";
+
+// Função para formatar placa brasileira
+function formatLicensePlate(plate: string): string {
+  if (!plate) return "Não informado";
+  
+  // Remove todos os caracteres não alfanuméricos
+  const cleanPlate = plate.replace(/[^A-Z0-9]/g, '');
+  
+  // Aplica a máscara baseada no tamanho e formato
+  if (cleanPlate.length === 7) {
+    // Verifica se é formato antigo (ABC1234) ou Mercosul (ABC1D23)
+    if (/^[A-Z]{3}[0-9]{4}$/.test(cleanPlate)) {
+      // Formato antigo: ABC-1234
+      return `${cleanPlate.slice(0, 3)}-${cleanPlate.slice(3)}`;
+    } else if (/^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(cleanPlate)) {
+      // Formato Mercosul: ABC1D23 (sem hífen)
+      return cleanPlate;
+    }
+  }
+  
+  return plate; // Retorna o valor original se não for uma placa válida
+}
 
 export function VehiclesList() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -195,7 +217,6 @@ export function VehiclesList() {
               <TableHead>Combustível</TableHead>
               <TableHead>Capacidade</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -204,7 +225,7 @@ export function VehiclesList() {
                 <TableCell className="font-medium">
                   {vehicle.brand} {vehicle.model}
                 </TableCell>
-                <TableCell>{vehicle.license_plate}</TableCell>
+                <TableCell>{formatLicensePlate(vehicle.license_plate)}</TableCell>
                 <TableCell>{vehicle.year}</TableCell>
                 <TableCell>
                   <Badge
@@ -225,22 +246,6 @@ export function VehiclesList() {
                   <Badge variant={vehicle.active ? "default" : "secondary"}>
                     {vehicle.active ? "Ativo" : "Inativo"}
                   </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <PermissionGate resource="vehicles" action="read">
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-1" />
-                        Ver
-                      </Button>
-                    </PermissionGate>
-                    <PermissionGate resource="vehicles" action="update">
-                      <Button variant="outline" size="sm">
-                        <Edit className="h-4 w-4 mr-1" />
-                        Editar
-                      </Button>
-                    </PermissionGate>
-                  </div>
                 </TableCell>
               </TableRow>
             ))}

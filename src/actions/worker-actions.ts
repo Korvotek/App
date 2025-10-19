@@ -19,12 +19,12 @@ export async function registerWorker(formData: WorkerRegistrationData) {
   const validatedData = workerRegistrationSchema.parse(formData);
 
   try {
+    // Preparar dados da party
     const partyData: PartyInsert = {
       tenant_id: tenantId,
-      party_type: "EMPLOYEE",
+      party_type: "PERSON", // Tentando com valor mais genérico
       display_name: validatedData.display_name,
       full_name: validatedData.display_name,
-      cpf: validatedData.cpf,
       active: true,
     };
 
@@ -129,7 +129,7 @@ export async function getWorkers(page: number = 1, limit: number = 12, search?: 
     .from("parties")
     .select("*", { count: "exact", head: true })
     .eq("tenant_id", tenantId)
-    .eq("party_type", "EMPLOYEE")
+    .eq("party_type", "PERSON")
     .eq("active", true);
 
   let dataQuery = supabase
@@ -153,7 +153,7 @@ export async function getWorkers(page: number = 1, limit: number = 12, search?: 
       )
     `)
     .eq("tenant_id", tenantId)
-    .eq("party_type", "EMPLOYEE")
+    .eq("party_type", "PERSON")
     .eq("active", true)
     .order("display_name")
     .range(from, to);
