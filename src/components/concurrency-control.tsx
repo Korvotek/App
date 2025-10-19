@@ -92,7 +92,7 @@ export function ConcurrencyWarning({
 }
 
 // Hook para controle de concorrência
-export function useConcurrencyControl(eventId: string, currentData: any) {
+export function useConcurrencyControl(eventId: string, currentData: { updated_at?: string }) {
   const [showWarning, setShowWarning] = useState(false);
   const [lastModifiedBy, setLastModifiedBy] = useState<string>();
   const [lastModifiedAt, setLastModifiedAt] = useState<string>();

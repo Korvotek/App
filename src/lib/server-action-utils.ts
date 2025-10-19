@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUserAndTenant } from "@/lib/auth/server-helpers";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/database.types";
 
-export interface ServerActionResult<T = any> {
+export interface ServerActionResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -56,7 +58,7 @@ export async function executeServerAction<T>(
 }
 
 export async function withAuth<T>(
-  action: (context: { user: any; tenantId: string; supabase: any }) => Promise<T>,
+  action: (context: { user: User; tenantId: string; supabase: SupabaseClient<Database> }) => Promise<T>,
   options: ServerActionOptions = {}
 ): Promise<ServerActionResult<T>> {
   return executeServerAction(async () => {
@@ -65,10 +67,12 @@ export async function withAuth<T>(
   }, options);
 }
 
+import { z } from "zod";
+
 export async function withValidation<T, V>(
-  schema: any,
+  schema: z.ZodSchema<T>,
   data: V,
-  action: (validatedData: T) => Promise<any>,
+  action: (validatedData: T) => Promise<unknown>,
   options: ServerActionOptions = {}
 ): Promise<ServerActionResult> {
   return executeServerAction(async () => {
@@ -78,9 +82,9 @@ export async function withValidation<T, V>(
 }
 
 export async function withAuthAndValidation<T, V>(
-  schema: any,
+  schema: z.ZodSchema<T>,
   data: V,
-  action: (context: { user: any; tenantId: string; supabase: any }, validatedData: T) => Promise<any>,
+  action: (context: { user: User; tenantId: string; supabase: SupabaseClient<Database> }, validatedData: T) => Promise<unknown>,
   options: ServerActionOptions = {}
 ): Promise<ServerActionResult> {
   return executeServerAction(async () => {

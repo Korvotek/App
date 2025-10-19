@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, MapPin, Phone, Mail, User, Building, RefreshCw } from "lucide-react";
+import { Calendar, MapPin, User, RefreshCw } from "lucide-react";
 import { getContaAzulCustomers } from "@/actions/event-actions";
 import { toast } from "sonner";
 
@@ -19,8 +19,10 @@ interface ContaAzulCustomer {
   phone?: string | null;
 }
 
+import type { Tables } from "@/lib/supabase/database.types";
+
 interface EventDataTabProps {
-  event: any;
+  event: Tables<"events">;
   isEditing: boolean;
   isReadOnly: boolean;
   onDataChange: () => void;
@@ -61,14 +63,14 @@ export function EventDataTab({ event, isEditing, isReadOnly, onDataChange }: Eve
     // Cliente
     client_id: event.client_id || "",
     contract_number: event.event_number || "",
-    // Endereço - acessar através de event_locations
-    address_street: event.event_locations?.[0]?.street || "",
-    address_number: event.event_locations?.[0]?.number || "",
-    address_complement: event.event_locations?.[0]?.complement || "",
-    address_neighborhood: event.event_locations?.[0]?.neighborhood || "",
-    address_city: event.event_locations?.[0]?.city || "",
-    address_state: event.event_locations?.[0]?.state || "",
-    address_postal_code: event.event_locations?.[0]?.postal_code || "",
+    // Endereço - será carregado separadamente
+    address_street: "",
+    address_number: "",
+    address_complement: "",
+    address_neighborhood: "",
+    address_city: "",
+    address_state: "",
+    address_postal_code: "",
   });
 
   // Carregar clientes do Conta Azul
@@ -105,14 +107,14 @@ export function EventDataTab({ event, isEditing, isReadOnly, onDataChange }: Eve
       // Cliente
       client_id: event.client_id || "",
       contract_number: event.event_number || "",
-      // Endereço - acessar através de event_locations
-      address_street: event.event_locations?.[0]?.street || "",
-      address_number: event.event_locations?.[0]?.number || "",
-      address_complement: event.event_locations?.[0]?.complement || "",
-      address_neighborhood: event.event_locations?.[0]?.neighborhood || "",
-      address_city: event.event_locations?.[0]?.city || "",
-      address_state: event.event_locations?.[0]?.state || "",
-      address_postal_code: event.event_locations?.[0]?.postal_code || "",
+      // Endereço - será carregado separadamente
+      address_street: "",
+      address_number: "",
+      address_complement: "",
+      address_neighborhood: "",
+      address_city: "",
+      address_state: "",
+      address_postal_code: "",
     });
   }, [event]);
 

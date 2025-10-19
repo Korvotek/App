@@ -20,14 +20,14 @@ interface EventFinancialTabProps {
     }>;
     event_services?: Array<{
       id: string;
-      quantity: string;
-      unit_price: string;
-      total_price: string;
+      quantity: number;
+      unit_price: number | null;
+      total_price: number | null;
       notes: string | null;
       products_services?: {
         description: string;
         item_type: string;
-        service_type: string;
+        service_type: string | null;
       };
     }>;
     molide_operations?: Array<{
@@ -54,7 +54,7 @@ export function EventFinancialTab({ event, isEditing, isReadOnly, onDataChange }
   
   // Calcular valor total dos serviços
   const totalServicesValue = event.event_services?.reduce((total: number, service) => {
-    return total + (parseFloat(service.total_price) || 0);
+    return total + (service.total_price || 0);
   }, 0) || 0;
   
   const [formData, setFormData] = useState({
@@ -153,11 +153,11 @@ export function EventFinancialTab({ event, isEditing, isReadOnly, onDataChange }
                       </div>
                       <div>
                         <span className="font-medium text-gray-700">Valor Unitário:</span>
-                        <p className="text-gray-900">{formatCurrency(service.unit_price)}</p>
+                        <p className="text-gray-900">{formatCurrency(service.unit_price?.toString() || "0")}</p>
                       </div>
                       <div>
                         <span className="font-medium text-gray-700">Total:</span>
-                        <p className="text-green-800 font-semibold">{formatCurrency(service.total_price)}</p>
+                        <p className="text-green-800 font-semibold">{formatCurrency(service.total_price?.toString() || "0")}</p>
                       </div>
                     </div>
                     {service.notes && (
@@ -171,7 +171,7 @@ export function EventFinancialTab({ event, isEditing, isReadOnly, onDataChange }
                 <div className="border-t pt-3">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-green-900">Total dos Serviços:</span>
-                    <span className="font-bold text-green-900 text-lg">{formatCurrency(totalServicesValue)}</span>
+                    <span className="font-bold text-green-900 text-lg">{formatCurrency(totalServicesValue.toString())}</span>
                   </div>
                 </div>
               </div>
@@ -262,7 +262,7 @@ export function EventFinancialTab({ event, isEditing, isReadOnly, onDataChange }
               />
               {formData.contract_value && (
                 <p className="text-sm text-gray-600">
-                  {formatCurrency(formData.contract_value)}
+                  {formatCurrency(formData.contract_value.toString())}
                 </p>
               )}
             </div>

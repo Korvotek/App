@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Calendar, momentLocalizer, Views } from "react-big-calendar";
+import { Calendar, momentLocalizer, Views, View } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { useOperations } from "@/hooks/use-operations";
@@ -17,7 +17,7 @@ import {
   EyeOff
 } from "lucide-react";
 import type { OperationWithRelations } from "@/actions/operations-actions";
-import type { EventWithRelations } from "@/actions/event-actions";
+import type { Tables } from "@/lib/supabase/database.types";
 
 // Configurar moment para português brasileiro
 moment.locale("pt-br");
@@ -29,7 +29,7 @@ interface CalendarEvent {
   start: Date;
   end: Date;
   type: "operation" | "event";
-  resource: OperationWithRelations | EventWithRelations;
+  resource: OperationWithRelations | Tables<"events">;
   color?: string;
 }
 
@@ -56,7 +56,7 @@ const eventTypeLabels = {
 };
 
 export function CalendarView() {
-  const [view, setView] = useState<keyof typeof Views>("month");
+  const [view, setView] = useState<View>("month");
   const [date, setDate] = useState(new Date());
   const [showOperations, setShowOperations] = useState(true);
   const [showEvents, setShowEvents] = useState(true);
@@ -79,7 +79,7 @@ export function CalendarView() {
 
   // Converter operações e eventos para eventos do calendário
   const calendarEvents: CalendarEvent[] = useMemo(() => {
-    const events: CalendarEvent[] = [];
+    const calendarEvents: CalendarEvent[] = [];
 
     // Adicionar operações
     if (showOperations) {
@@ -93,7 +93,7 @@ export function CalendarView() {
           ? new Date(operation.scheduled_end)
           : new Date(startDate.getTime() + 2 * 60 * 60 * 1000); // 2 horas depois se não houver fim
 
-        events.push({
+        calendarEvents.push({
           id: `operation-${operation.id}`,
           title: `${operationTypeLabels[operation.operation_type as keyof typeof operationTypeLabels] || operation.operation_type} - ${operation.events?.title || "Sem evento"}`,
           start: startDate,
@@ -107,31 +107,31 @@ export function CalendarView() {
 
     // Adicionar eventos
     if (showEvents) {
-      events.forEach((event) => {
-        const startDate = new Date(event.start_datetime);
-        const endDate = event.end_datetime 
-          ? new Date(event.end_datetime)
+      events.forEach((eventItem) => {
+        const startDate = new Date(eventItem.start_datetime);
+        const endDate = eventItem.end_datetime 
+          ? new Date(eventItem.end_datetime)
           : new Date(startDate.getTime() + 8 * 60 * 60 * 1000); // 8 horas depois se não houver fim
 
-        events.push({
-          id: `event-${event.id}`,
-          title: `${event.title} (${event.event_number})`,
+        calendarEvents.push({
+          id: `event-${eventItem.id}`,
+          title: `${eventItem.title} (${eventItem.event_number})`,
           start: startDate,
           end: endDate,
           type: "event",
-          resource: event,
-          color: eventTypeColors[event.event_type as keyof typeof eventTypeColors],
+          resource: eventItem as unknown as Tables<"events">,
+          color: eventTypeColors[eventItem.event_type as keyof typeof eventTypeColors],
         });
       });
     }
 
-    return events;
+    return calendarEvents;
   }, [operations, showOperations, showEvents, operationTypeFilter]);
 
   // Componente para renderizar eventos no calendário
   const EventComponent = ({ event }: { event: CalendarEvent }) => {
     const isOperation = event.type === "operation";
-    const resource = event.resource as OperationWithRelations | EventWithRelations;
+    const resource = event.resource as OperationWithRelations | Tables<"events">;
     
     return (
       <div className="text-xs p-1">
@@ -142,7 +142,7 @@ export function CalendarView() {
           </div>
         ) : (
           <div className="text-gray-600">
-            {(resource as EventWithRelations).client_name || "Sem cliente"}
+            {(resource as Tables<"events">).client_name || "Sem cliente"}
           </div>
         )}
       </div>
@@ -240,7 +240,7 @@ export function CalendarView() {
             {/* Seletor de visualização */}
             <div className="flex items-center gap-2">
               <List className="h-4 w-4" />
-              <Select value={view} onValueChange={(value) => setView(value as keyof typeof Views)}>
+              <Select value={view} onValueChange={(value) => setView(value as View)}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>

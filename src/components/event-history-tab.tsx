@@ -6,6 +6,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { History, Calendar, User } from "lucide-react";
 import { useEventAuditLogs } from "@/hooks/use-event-details";
 
+interface AuditLogMetadata {
+  field_name?: string;
+  old_value?: string;
+  new_value?: string;
+}
+
 interface EventHistoryTabProps {
   eventId: string;
 }
@@ -120,7 +126,7 @@ export function EventHistoryTab({ eventId }: EventHistoryTabProps) {
                       <TableCell className="text-sm">
                         <div className="flex items-center space-x-2">
                           <Calendar className="h-4 w-4 text-gray-400" />
-                          <span>{formatDateTime(log.timestamp || log.created_at)}</span>
+                          <span>{formatDateTime(log.timestamp || "")}</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -135,13 +141,13 @@ export function EventHistoryTab({ eventId }: EventHistoryTabProps) {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-medium">
-                        {log.metadata?.field_name ? getFieldLabel(log.metadata.field_name) : "Sistema"}
+                        {(log.metadata as AuditLogMetadata)?.field_name ? getFieldLabel((log.metadata as AuditLogMetadata).field_name!) : "Sistema"}
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
-                        {log.metadata?.old_value || "-"}
+                        {(log.metadata as AuditLogMetadata)?.old_value || "-"}
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
-                        {log.metadata?.new_value || "-"}
+                        {(log.metadata as AuditLogMetadata)?.new_value || "-"}
                       </TableCell>
                     </TableRow>
                   ))}

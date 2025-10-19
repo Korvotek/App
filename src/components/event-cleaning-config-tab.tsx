@@ -4,13 +4,19 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button"; // Removido - não utilizado
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Settings, Clock, Calendar } from "lucide-react";
 
 interface EventCleaningConfigTabProps {
-  event: any;
+  event: {
+    event_type?: string | null;
+    cleaning_start_time?: string;
+    cleaning_end_time?: string;
+    cleaning_frequency?: string;
+    cleaning_days?: string[];
+  };
   isEditing: boolean;
   isReadOnly: boolean;
   onDataChange: () => void;

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+// import { revalidatePath } from "next/cache"; // Removido - não utilizado
 import { getCurrentUserAndTenant } from "@/lib/auth/server-helpers";
 import {
   vehicleRegistrationSchema,
@@ -16,7 +16,7 @@ export async function registerVehicle(formData: VehicleRegistrationData) {
   return withAuthAndValidation(
     vehicleRegistrationSchema,
     formData,
-    async ({ user, tenantId, supabase }, validatedData) => {
+    async ({ user, tenantId, supabase }, validatedData: VehicleRegistrationData) => {
       const vehicleData: VehicleInsert = {
         tenant_id: tenantId,
         brand: validatedData.brand,

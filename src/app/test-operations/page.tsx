@@ -6,7 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function TestOperationsPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<{
+    success: boolean;
+    data: unknown;
+    message: string;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const testDirectCall = async () => {
