@@ -151,7 +151,7 @@ export function EventRegistrationForm() {
       description: "Evento de teste para demonstração do sistema",
       client_id: customers.length > 0 ? customers[0].id : "",
       contract_number: `CONTRATO-${Date.now()}`,
-      event_type: "UNICO",
+      event_type: "CONTINUO",
       mobilization_date: tomorrow.toISOString().split('T')[0],
       mobilization_time: "08:00",
       demobilization_date: dayAfterTomorrow.toISOString().split('T')[0],
@@ -208,7 +208,7 @@ export function EventRegistrationForm() {
         customerName: "Cliente Selecionado",
         customerDocument: "123456789",
         contractNumber: `EVT-${Date.now()}`,
-        eventType: formData.event_type as "UNICO" | "INTERMITENTE",
+        eventType: formData.event_type as "UNICO" | "INTERMITENTE" | "CONTINUO",
         address: {
           street: formData.address_street,
           number: formData.address_number,
@@ -219,7 +219,7 @@ export function EventRegistrationForm() {
           zipCode: formData.address_postal_code,
         },
         services: [],
-        schedule: formData.event_type === "INTERMITENTE" ? {
+        schedule: (formData.event_type === "INTERMITENTE" || formData.event_type === "CONTINUO") ? {
           mobilizationDate: startDate.toISOString().split('T')[0],
           mobilizationTime: startDate.toTimeString().split(' ')[0].substring(0, 5),
           demobilizationDate: endDate.toISOString().split('T')[0],
@@ -332,7 +332,7 @@ export function EventRegistrationForm() {
         demobilizationDate: endDate.toISOString().split('T')[0],
         demobilizationTime: endDate.toTimeString().split(' ')[0].substring(0, 5),
         cleaningTime: formData.cleaning_time,
-        ...(formData.event_type === "INTERMITENTE" && { cleaningDays: formData.cleaning_days }),
+        ...((formData.event_type === "INTERMITENTE" || formData.event_type === "CONTINUO") && { cleaningDays: formData.cleaning_days }),
       };
       
       formDataToSubmit.append("schedule", JSON.stringify(schedule));
@@ -472,6 +472,7 @@ export function EventRegistrationForm() {
                 <SelectContent>
                   <SelectItem value="UNICO">Único</SelectItem>
                   <SelectItem value="INTERMITENTE">Intermitente</SelectItem>
+                  <SelectItem value="CONTINUO">Contínuo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -544,7 +545,7 @@ export function EventRegistrationForm() {
               />
             </div>
 
-            {formData.event_type === "INTERMITENTE" && (
+            {(formData.event_type === "INTERMITENTE" || formData.event_type === "CONTINUO") && (
               <div className="space-y-2">
                 <Label>Dias da Semana - Limpeza *</Label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">

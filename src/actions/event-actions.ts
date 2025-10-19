@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUserAndTenant } from "@/lib/auth/server-helpers";
 import { EventSchema, UpdateEventSchema, type EventFilters } from "@/lib/validations/event-schema";
+import { generateEventOccurrences, validateEventForOccurrenceGeneration } from "@/lib/event-occurrence-generator";
 
 export interface EventsResponse {
   events: Array<{
@@ -12,7 +13,7 @@ export interface EventsResponse {
     description: string | null;
     client_id: string | null;
     event_number: string;
-    event_type: "UNICO" | "INTERMITENTE" | null;
+    event_type: "UNICO" | "INTERMITENTE" | "CONTINUO" | "CONTINUO" | null;
     start_datetime: string;
     end_datetime: string | null;
     status: string | null;
@@ -56,7 +57,7 @@ export async function createEvent(formData: FormData) {
       customerName: formData.get("customerName") as string,
       customerDocument: formData.get("customerDocument") as string,
       contractNumber: formData.get("contractNumber") as string,
-      eventType: formData.get("eventType") as "UNICO" | "INTERMITENTE",
+      eventType: formData.get("eventType") as "UNICO" | "INTERMITENTE" | "CONTINUO",
       address: {
         street: formData.get("address.street") as string,
         number: formData.get("address.number") as string,
@@ -115,7 +116,7 @@ export async function createEvent(formData: FormData) {
       title: validatedData.title,
       description: validatedData.description,
       client_id: clientId,
-      event_type: validatedData.eventType,
+      event_type: validatedData.eventType as "UNICO" | "INTERMITENTE", // Temporário até atualizar o banco
       start_datetime: `${validatedData.schedule?.mobilizationDate}T${validatedData.schedule?.mobilizationTime}`,
       end_datetime: `${validatedData.schedule?.demobilizationDate}T${validatedData.schedule?.demobilizationTime}`,
       status: "DRAFT" as const,
@@ -156,50 +157,58 @@ export async function createEvent(formData: FormData) {
       throw new Error(`Erro ao inserir localização do evento: ${locationError.message}`);
     }
 
-    const operations = [
-      {
-        operation_type: "MOBILIZATION",
-        scheduled_start: `${validatedData.schedule?.mobilizationDate}T${validatedData.schedule?.mobilizationTime}`,
-        scheduled_end: `${validatedData.schedule?.mobilizationDate}T${validatedData.schedule?.mobilizationTime}`,
-        status: "SCHEDULED",
-        notes: "Mobilização de equipamentos para o evento",
-      },
-      {
-        operation_type: "CLEANING",
-        scheduled_start: `${validatedData.schedule?.demobilizationDate}T${validatedData.schedule?.cleaningTime}`,
-        scheduled_end: `${validatedData.schedule?.demobilizationDate}T${validatedData.schedule?.cleaningTime}`,
-        status: "SCHEDULED",
-        notes: "Limpeza pós evento",
-      },
-      {
-        operation_type: "DEMOBILIZATION",
-        scheduled_start: `${validatedData.schedule?.demobilizationDate}T${validatedData.schedule?.demobilizationTime}`,
-        scheduled_end: `${validatedData.schedule?.demobilizationDate}T${validatedData.schedule?.demobilizationTime}`,
-        status: "SCHEDULED",
-        notes: "Desmobilização de equipamentos",
-      },
-    ];
+    // Gerar ocorrências automáticas baseadas no tipo de evento
+    console.log("🔄 Gerando ocorrências automáticas para evento:", insertedEvent.id);
+    
+    const eventForGeneration = {
+      id: insertedEvent.id,
+      title: validatedData.title,
+      description: validatedData.description,
+      customerId: validatedData.customerId,
+      customerName: validatedData.customerName,
+      customerDocument: validatedData.customerDocument,
+      contractNumber: validatedData.contractNumber,
+      eventType: validatedData.eventType,
+      address: validatedData.address,
+      services: validatedData.services,
+      schedule: validatedData.schedule
+    };
 
-    for (const operation of operations) {
-        const operationRecord = {
-          tenant_id: tenantId,
-          event_id: insertedEvent.id,
-          operation_type: operation.operation_type as "MOBILIZATION" | "CLEANING" | "DEMOBILIZATION",
-          scheduled_start: operation.scheduled_start,
-          scheduled_end: operation.scheduled_end,
-          status: operation.status as "SCHEDULED" | "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED",
-          notes: operation.notes,
-        };
+    // Validar evento antes de gerar ocorrências
+    const validation = validateEventForOccurrenceGeneration(eventForGeneration);
+    if (!validation.isValid) {
+      console.error("❌ Evento inválido para geração de ocorrências:", validation.errors);
+      throw new Error(`Evento inválido: ${validation.errors.join(", ")}`);
+    }
+
+    // Gerar ocorrências automáticas
+    const occurrences = generateEventOccurrences(eventForGeneration);
+    console.log(`✅ Geradas ${occurrences.length} ocorrências automáticas`);
+
+    // Inserir ocorrências no banco de dados
+    for (const occurrence of occurrences) {
+      const operationRecord = {
+        tenant_id: tenantId,
+        event_id: insertedEvent.id,
+        operation_type: occurrence.operationType,
+        scheduled_start: occurrence.scheduledStart,
+        scheduled_end: occurrence.scheduledEnd,
+        status: occurrence.status,
+        notes: occurrence.notes,
+        created_at: new Date().toISOString(),
+      };
 
       const { error: operationError } = await supabase
         .from("event_operations")
         .insert(operationRecord);
 
       if (operationError) {
-        console.error("Erro ao criar operação:", operationError);
-        throw new Error(`Erro ao criar operação ${operation.operation_type}: ${operationError.message}`);
+        console.error("❌ Erro ao criar operação:", operationError);
+        throw new Error(`Erro ao criar operação ${occurrence.operationType}: ${operationError.message}`);
       }
     }
+
+    console.log("✅ Todas as ocorrências foram criadas com sucesso");
 
     if (validatedData.services && validatedData.services.length > 0) {
       console.log("🔧 Processando serviços do evento:", validatedData.services.length);
@@ -352,7 +361,9 @@ export async function getEvents(
     }
 
     if (filters.eventType) {
-      query = query.eq("event_type", filters.eventType);
+      // Mapear CONTÍNUO para INTERMITENTE temporariamente até atualizar o banco
+      const dbEventType = filters.eventType === "CONTINUO" ? "INTERMITENTE" : filters.eventType;
+      query = query.eq("event_type", dbEventType);
     }
 
     if (filters.status) {
@@ -439,7 +450,7 @@ export async function updateEvent(id: string, formData: FormData) {
       description: formData.get("description") as string,
       customerId: formData.get("customerId") as string,
       contractNumber: formData.get("contractNumber") as string,
-      eventType: formData.get("eventType") as "UNICO" | "INTERMITENTE",
+      eventType: formData.get("eventType") as "UNICO" | "INTERMITENTE" | "CONTINUO",
       address: {
         street: formData.get("address.street") as string,
         number: formData.get("address.number") as string,
@@ -460,7 +471,7 @@ export async function updateEvent(id: string, formData: FormData) {
       description: validatedData.description,
       client_id: validatedData.customerId,
       event_number: validatedData.contractNumber,
-      event_type: validatedData.eventType,
+      event_type: validatedData.eventType as "UNICO" | "INTERMITENTE", // Temporário até atualizar o banco
       start_datetime: `${validatedData.schedule?.mobilizationDate}T${validatedData.schedule?.mobilizationTime}`,
       end_datetime: `${validatedData.schedule?.demobilizationDate}T${validatedData.schedule?.demobilizationTime}`,
       updated_at: new Date().toISOString(),

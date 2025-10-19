@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const EventTypeEnum = z.enum(["UNICO", "INTERMITENTE"]);
+export const EventTypeEnum = z.enum(["UNICO", "INTERMITENTE", "CONTINUO"]);
 
 export const WeekdayEnum = z.enum([
   "MONDAY",
@@ -52,12 +52,12 @@ export const EventFormSchema = z.object({
   address_state: z.string().min(2, "UF é obrigatória").max(2, "UF deve ter 2 caracteres"),
   address_postal_code: z.string().min(8, "CEP é obrigatório").max(9, "CEP inválido"),
 }).refine((data) => {
-  if (data.event_type === "INTERMITENTE") {
+  if (data.event_type === "INTERMITENTE" || data.event_type === "CONTINUO") {
     return data.cleaning_days && data.cleaning_days.length > 0;
   }
   return true;
 }, {
-  message: "Pelo menos um dia da semana deve ser selecionado para eventos intermitentes",
+  message: "Pelo menos um dia da semana deve ser selecionado para eventos intermitentes e contínuos",
   path: ["cleaning_days"]
 }).refine((data) => {
   const mobilizationDate = new Date(`${data.mobilization_date}T${data.mobilization_time}`);
@@ -95,6 +95,15 @@ export const IntermittentEventScheduleSchema = z.object({
   cleaningTime: z.string().min(1, "Horário de limpeza é obrigatório"),
 });
 
+export const ContinuousEventScheduleSchema = z.object({
+  mobilizationDate: z.string().min(1, "Data de mobilização é obrigatória"),
+  mobilizationTime: z.string().min(1, "Horário de mobilização é obrigatório"),
+  demobilizationDate: z.string().min(1, "Data de desmobilização é obrigatória"),
+  demobilizationTime: z.string().min(1, "Horário de desmobilização é obrigatório"),
+  cleaningDays: z.array(WeekdayEnum).min(1, "Pelo menos um dia da semana deve ser selecionado"),
+  cleaningTime: z.string().min(1, "Horário de limpeza é obrigatório"),
+});
+
 export const EventSchema = z.object({
   title: z.string().min(1, "Título do evento é obrigatório"),
   description: z.string().optional(),
@@ -105,7 +114,7 @@ export const EventSchema = z.object({
   eventType: EventTypeEnum,
   address: EventAddressSchema,
   services: z.array(EventServiceSchema).min(1, "Pelo menos um serviço deve ser adicionado"),
-  schedule: z.union([UniqueEventScheduleSchema, IntermittentEventScheduleSchema]),
+  schedule: z.union([UniqueEventScheduleSchema, IntermittentEventScheduleSchema, ContinuousEventScheduleSchema]),
   evidence: z.string().optional().nullable(),
 }).refine((data) => {
   if (data.eventType === "UNICO") {
@@ -116,7 +125,7 @@ export const EventSchema = z.object({
            "cleaningTime" in data.schedule;
   }
   
-  if (data.eventType === "INTERMITENTE") {
+  if (data.eventType === "INTERMITENTE" || data.eventType === "CONTINUO") {
     return "mobilizationDate" in data.schedule && 
            "mobilizationTime" in data.schedule &&
            "demobilizationDate" in data.schedule && 
@@ -168,6 +177,7 @@ export type EventService = z.infer<typeof EventServiceSchema>;
 export type EventAddress = z.infer<typeof EventAddressSchema>;
 export type UniqueEventSchedule = z.infer<typeof UniqueEventScheduleSchema>;
 export type IntermittentEventSchedule = z.infer<typeof IntermittentEventScheduleSchema>;
+export type ContinuousEventSchedule = z.infer<typeof ContinuousEventScheduleSchema>;
 export type Event = z.infer<typeof EventSchema>;
 export type UpdateEvent = z.infer<typeof UpdateEventSchema>;
 export type EventFilters = z.infer<typeof EventFiltersSchema>;
@@ -195,7 +205,8 @@ export const WEEKDAY_TO_NUMBER: Record<Weekday, number> = {
 
 export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   UNICO: "Único",
-  INTERMITENTE: "Intermitente"
+  INTERMITENTE: "Intermitente",
+  CONTINUO: "Contínuo"
 };
 
 export const EVENT_STATUS_LABELS: Record<string, string> = {
